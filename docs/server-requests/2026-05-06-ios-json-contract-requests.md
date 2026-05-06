@@ -20,7 +20,7 @@ Accept: application/json
 - iOS 앱은 `/articles` 첫 페이지를 Native 뉴스 목록으로 표시한다.
 - `/articles` 응답의 `pagination` 객체는 앱에서 디코딩하며, Native 뉴스 목록의 `더 보기` 버튼에 연결했다.
 - 2026-05-07 수동 검증: `더 보기` 버튼으로 다음 페이지가 정상 append되는 것을 확인했다.
-- iOS 앱은 `/articles?search=...` 검색 UI를 구현했다. 서버 JSON 응답은 curl로 확인했고, 앱 UI 수동 검증은 아직 남아 있다.
+- iOS 앱은 `/articles?search=...` 검색 UI를 구현했다. 서버 JSON 응답은 curl로 확인했고, 앱 UI 수동 검증도 완료했다.
 - `/others`, `/tag/:keyword`, 현재 사용자 확인 endpoint, 좋아요 POST/DELETE JSON 계약은 아직 iOS에서 구현/검증 전이다.
 
 ## 공통 요청사항
