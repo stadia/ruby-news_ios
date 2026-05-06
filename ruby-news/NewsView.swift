@@ -8,14 +8,56 @@
 import SwiftUI
 
 struct NewsView: View {
+    @State private var viewModel = NewsViewModel()
+    @State private var selectedArticle: NewsArticle?
+
     var body: some View {
         NavigationStack {
-            ContentUnavailableView(
-                "뉴스를 불러올 준비 중입니다",
-                systemImage: "newspaper",
-                description: Text("ruby-news.kr의 JSON 응답이 준비되면 최신 Ruby 뉴스를 표시합니다.")
-            )
+            Group {
+                if viewModel.isLoading && viewModel.articles.isEmpty {
+                    ProgressView("뉴스를 불러오는 중입니다")
+                } else if let errorMessage = viewModel.errorMessage, viewModel.articles.isEmpty {
+                    ContentUnavailableView {
+                        Label(errorMessage, systemImage: "exclamationmark.triangle")
+                    } actions: {
+                        Button("다시 시도") {
+                            Task { await viewModel.load() }
+                        }
+                    }
+                } else {
+                    List(viewModel.articles) { article in
+                        Button {
+                            selectedArticle = article
+                        } label: {
+                            NewsArticleRow(article: article)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .refreshable {
+                        await viewModel.load()
+                    }
+                }
+            }
             .navigationTitle("뉴스")
+            .task {
+                guard viewModel.articles.isEmpty else { return }
+                await viewModel.load()
+            }
+            .sheet(item: $selectedArticle) { article in
+                NavigationStack {
+                    HotwireScreen(route: .article(id: article.id))
+                        .ignoresSafeArea(edges: .bottom)
+                        .navigationTitle(article.displayTitle)
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("닫기") {
+                                    selectedArticle = nil
+                                }
+                            }
+                        }
+                }
+            }
         }
     }
 }

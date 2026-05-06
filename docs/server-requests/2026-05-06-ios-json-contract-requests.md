@@ -12,6 +12,15 @@ Accept: application/json
 
 이 문서는 iOS 앱 구현을 위해 서버 쪽에서 확인/제공해야 할 JSON 계약 요청사항이다. iOS 프로젝트에서는 서버 코드를 직접 수정하지 않는다.
 
+## 진행 상태
+
+2026-05-07 현재:
+
+- `GET /articles` with `Accept: application/json`은 로컬 서버에서 `200 OK`와 JSON 응답을 확인했다.
+- iOS 앱은 `/articles` 첫 페이지를 Native 뉴스 목록으로 표시한다.
+- `/articles` 응답의 `pagination` 객체는 앱에서 디코딩 가능하지만, UI/load more 동작에는 아직 연결하지 않았다.
+- `/others`, `/tag/:keyword`, 현재 사용자 확인 endpoint, 좋아요 POST/DELETE JSON 계약은 아직 iOS에서 구현/검증 전이다.
+
 ## 공통 요청사항
 
 ### 1. JSON 응답 형식
@@ -393,12 +402,12 @@ Accept: application/json
 
 서버 쪽에서 최소한 아래가 준비되면 iOS Native 뉴스 MVP를 구현할 수 있다.
 
-1. `GET /articles` JSON
-2. `GET /others` JSON
-3. `GET /tag/:keyword` JSON
-4. 현재 사용자 확인 JSON endpoint 확정
-5. `POST/DELETE /articles/:id/like` JSON
-6. WebView 로그인 쿠키가 Native JSON 요청에 적용되는지 확인
-7. JSON POST/DELETE의 CSRF 처리 방식 확인
+1. `GET /articles` JSON — 완료/검증됨
+2. `GET /others` JSON — 미검증
+3. `GET /tag/:keyword` JSON — 미검증
+4. 현재 사용자 확인 JSON endpoint 확정 — 미확정
+5. `POST/DELETE /articles/:id/like` JSON — 미검증
+6. WebView 로그인 쿠키가 Native JSON 요청에 적용되는지 확인 — 미검증
+7. JSON POST/DELETE의 CSRF 처리 방식 확인 — 미확정
 
-이 중 1번이 준비되지 않았다면 iOS는 Hotwire Shell과 탭 구조부터 구현하면 된다.
+현재 iOS 앱은 1번만으로 Native 뉴스 첫 페이지 MVP를 구현했다. 다음 Native 뉴스 확장 단계에서는 pagination/load more, 검색, 태그 필터, 좋아요 순서로 남은 계약을 검증한다.
