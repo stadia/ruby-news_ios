@@ -19,6 +19,7 @@ Accept: application/json
 - `GET /articles` with `Accept: application/json`은 로컬 서버에서 `200 OK`와 JSON 응답을 확인했다.
 - iOS 앱은 `/articles` 첫 페이지를 Native 뉴스 목록으로 표시한다.
 - `/articles` 응답의 `pagination` 객체는 앱에서 디코딩하며, Native 뉴스 목록의 `더 보기` 버튼에 연결했다.
+- 2026-05-07 수동 검증: `더 보기` 버튼으로 다음 페이지가 정상 append되는 것을 확인했다.
 - `/others`, `/tag/:keyword`, 현재 사용자 확인 endpoint, 좋아요 POST/DELETE JSON 계약은 아직 iOS에서 구현/검증 전이다.
 
 ## 공통 요청사항
