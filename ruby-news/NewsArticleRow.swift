@@ -9,6 +9,7 @@ import SwiftUI
 
 struct NewsArticleRow: View {
     let article: NewsArticle
+    var onTagSelected: ((String) -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -38,11 +39,17 @@ struct NewsArticleRow: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 6) {
                         ForEach(article.tags, id: \.self) { tag in
-                            Text("#\(tag)")
-                                .font(.caption2)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(.quaternary, in: Capsule())
+                            Button {
+                                onTagSelected?(tag)
+                            } label: {
+                                Text("#\(tag)")
+                                    .font(.caption2)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(.quaternary, in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(onTagSelected == nil)
                         }
                     }
                 }

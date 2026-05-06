@@ -26,13 +26,25 @@ struct NewsView: View {
                     }
                 } else {
                     List {
-                        ForEach(viewModel.articles) { article in
-                            Button {
-                                selectedArticle = article
-                            } label: {
-                                NewsArticleRow(article: article)
+                        if let selectedTag = viewModel.selectedTag {
+                            HStack {
+                                Label("#\(selectedTag)", systemImage: "tag")
+                                Spacer()
+                                Button("해제") {
+                                    Task { await viewModel.clearTag() }
+                                }
                             }
-                            .buttonStyle(.plain)
+                            .font(.subheadline)
+                        }
+
+                        ForEach(viewModel.articles) { article in
+                            NewsArticleRow(article: article) { tag in
+                                Task { await viewModel.selectTag(tag) }
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                selectedArticle = article
+                            }
                         }
 
                         if viewModel.isLoadingMore {

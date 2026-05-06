@@ -33,6 +33,14 @@ struct APIClient {
         return try Self.decoder.decode(ArticlesResponse.self, from: data)
     }
 
+    func tag(keyword: String, page: Int? = nil) async throws -> ArticlesResponse {
+        let request = APIRequest.tag(keyword: keyword, page: page).urlRequest(relativeTo: baseURL)
+        let (data, response) = try await session.data(for: request)
+
+        try validate(response)
+        return try Self.decoder.decode(ArticlesResponse.self, from: data)
+    }
+
     private func validate(_ response: URLResponse) throws {
         guard let httpResponse = response as? HTTPURLResponse else { return }
         guard (200..<300).contains(httpResponse.statusCode) else {

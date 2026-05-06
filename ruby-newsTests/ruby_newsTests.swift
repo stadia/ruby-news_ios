@@ -69,6 +69,15 @@ struct ruby_newsTests {
     }
 
     @MainActor
+    @Test func tagRequestEncodesKeywordPathAndPageQuery() async throws {
+        let baseURL = try #require(URL(string: "http://localhost:3000"))
+        let request = APIRequest.tag(keyword: "Ruby 뉴스", page: 2).urlRequest(relativeTo: baseURL)
+
+        #expect(request.url?.absoluteString == "http://localhost:3000/tag/Ruby%20%EB%89%B4%EC%8A%A4?page=2")
+        #expect(request.value(forHTTPHeaderField: "Accept") == "application/json")
+    }
+
+    @MainActor
     @Test func articlesRequestEncodesPageQuery() async throws {
         let baseURL = try #require(URL(string: "http://localhost:3000"))
         let request = APIRequest(
@@ -87,8 +96,9 @@ struct ruby_newsTests {
             1: try articlesResponse(slugs: ["first-page-article"], page: 1, next: 2),
             2: try articlesResponse(slugs: ["second-page-article"], page: 2, next: nil)
         ]
-        let viewModel = NewsViewModel { page, searchQuery in
+        let viewModel = NewsViewModel { page, searchQuery, tag in
             #expect(searchQuery == nil)
+            #expect(tag == nil)
             requestedPages.append(page)
             return try #require(responses[page ?? 1])
         }
@@ -105,12 +115,12 @@ struct ruby_newsTests {
 
     @MainActor
     @Test func newsViewModelSearchesAndPaginatesWithQuery() async throws {
-        var requests: [(page: Int?, searchQuery: String?)] = []
+        var requests: [(page: Int?, searchQuery: String?, tag: String?)] = []
         let defaultResponse = try articlesResponse(slugs: ["default-article"], page: 1, next: nil)
         let searchFirstPage = try articlesResponse(slugs: ["rails-first-page"], page: 1, next: 2)
         let searchSecondPage = try articlesResponse(slugs: ["rails-second-page"], page: 2, next: nil)
-        let viewModel = NewsViewModel { page, searchQuery in
-            requests.append((page, searchQuery))
+        let viewModel = NewsViewModel { page, searchQuery, tag in
+            requests.append((page, searchQuery, tag))
 
             if searchQuery == "rails" && page == nil {
                 return searchFirstPage
@@ -138,6 +148,32 @@ struct ruby_newsTests {
         #expect(viewModel.articles.map(\.id) == ["default-article"])
         #expect(requests.map { $0.page } == [nil, 2, nil])
         #expect(requests.map { $0.searchQuery } == ["rails", "rails", nil])
+        #expect(requests.map { $0.tag } == [nil, nil, nil])
+    }
+
+    @MainActor
+    @Test func newsViewModelFiltersAndPaginatesByTag() async throws {
+        var requests: [(page: Int?, searchQuery: String?, tag: String?)] = []
+        let tagFirstPage = try articlesResponse(slugs: ["tag-first-page"], page: 1, next: 2)
+        let tagSecondPage = try articlesResponse(slugs: ["tag-second-page"], page: 2, next: nil)
+        let viewModel = NewsViewModel { page, searchQuery, tag in
+            requests.append((page, searchQuery, tag))
+            return page == 2 ? tagSecondPage : tagFirstPage
+        }
+
+        viewModel.searchQuery = "rails"
+        await viewModel.selectTag("hotwire_native")
+        #expect(viewModel.searchQuery == "")
+        #expect(viewModel.selectedTag == "hotwire_native")
+        #expect(viewModel.articles.map(\.id) == ["tag-first-page"])
+        #expect(viewModel.canLoadMore)
+
+        await viewModel.loadMore()
+        #expect(viewModel.articles.map(\.id) == ["tag-first-page", "tag-second-page"])
+        #expect(!viewModel.canLoadMore)
+        #expect(requests.map { $0.page } == [nil, 2])
+        #expect(requests.map { $0.searchQuery } == [nil, nil])
+        #expect(requests.map { $0.tag } == ["hotwire_native", "hotwire_native"])
     }
 
     @MainActor

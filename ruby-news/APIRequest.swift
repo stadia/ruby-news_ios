@@ -11,6 +11,15 @@ struct APIRequest {
     let path: String
     var queryItems: [URLQueryItem] = []
 
+    static func tag(keyword: String, page: Int? = nil) -> APIRequest {
+        var queryItems: [URLQueryItem] = []
+        if let page {
+            queryItems.append(URLQueryItem(name: "page", value: String(page)))
+        }
+
+        return APIRequest(path: "/tag/\(encodedPathSegment(keyword))", queryItems: queryItems)
+    }
+
     func urlRequest(relativeTo baseURL: URL = AppEnvironment.baseURL) -> URLRequest {
         var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)!
         components.percentEncodedPath = path
@@ -19,5 +28,11 @@ struct APIRequest {
         var request = URLRequest(url: components.url!)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         return request
+    }
+
+    private static func encodedPathSegment(_ value: String) -> String {
+        var allowedCharacters = CharacterSet.urlPathAllowed
+        allowedCharacters.remove(charactersIn: "/")
+        return value.addingPercentEncoding(withAllowedCharacters: allowedCharacters) ?? value
     }
 }

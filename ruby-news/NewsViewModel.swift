@@ -11,7 +11,7 @@ import Observation
 @MainActor
 @Observable
 final class NewsViewModel {
-    typealias LoadArticles = (Int?, String?) async throws -> ArticlesResponse
+    typealias LoadArticles = (Int?, String?, String?) async throws -> ArticlesResponse
 
     private let loadArticles: LoadArticles
     private var activeSearchQuery: String?
@@ -19,6 +19,7 @@ final class NewsViewModel {
     var articles: [NewsArticle] = []
     var pagination: Pagination?
     var searchQuery = ""
+    var selectedTag: String?
     var isLoading = false
     var isLoadingMore = false
     var errorMessage: String?
@@ -28,8 +29,12 @@ final class NewsViewModel {
     }
 
     init(apiClient: APIClient = APIClient()) {
-        self.loadArticles = { page, searchQuery in
-            try await apiClient.articles(page: page, searchQuery: searchQuery)
+        self.loadArticles = { page, searchQuery, tag in
+            if let tag {
+                try await apiClient.tag(keyword: tag, page: page)
+            } else {
+                try await apiClient.articles(page: page, searchQuery: searchQuery)
+            }
         }
     }
 
@@ -38,12 +43,25 @@ final class NewsViewModel {
     }
 
     func load() async {
-        await loadFirstPage(searchQuery: activeSearchQuery)
+        await loadFirstPage()
     }
 
     func search() async {
+        selectedTag = nil
         activeSearchQuery = normalizedSearchQuery
-        await loadFirstPage(searchQuery: activeSearchQuery)
+        await loadFirstPage()
+    }
+
+    func selectTag(_ tag: String) async {
+        selectedTag = tag
+        activeSearchQuery = nil
+        searchQuery = ""
+        await loadFirstPage()
+    }
+
+    func clearTag() async {
+        selectedTag = nil
+        await loadFirstPage()
     }
 
     func loadMore() async {
@@ -53,7 +71,7 @@ final class NewsViewModel {
         errorMessage = nil
 
         do {
-            let response = try await loadArticles(nextPage, activeSearchQuery)
+            let response = try await loadArticles(nextPage, activeSearchQuery, selectedTag)
             articles.append(contentsOf: response.articles)
             pagination = response.pagination
         } catch {
@@ -63,12 +81,12 @@ final class NewsViewModel {
         isLoadingMore = false
     }
 
-    private func loadFirstPage(searchQuery: String?) async {
+    private func loadFirstPage() async {
         isLoading = true
         errorMessage = nil
 
         do {
-            let response = try await loadArticles(nil, searchQuery)
+            let response = try await loadArticles(nil, activeSearchQuery, selectedTag)
             articles = response.articles
             pagination = response.pagination
         } catch {
