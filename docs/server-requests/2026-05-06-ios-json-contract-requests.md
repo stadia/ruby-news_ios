@@ -18,7 +18,7 @@ Accept: application/json
 
 - `GET /articles` with `Accept: application/json`은 로컬 서버에서 `200 OK`와 JSON 응답을 확인했다.
 - iOS 앱은 `/articles` 첫 페이지를 Native 뉴스 목록으로 표시한다.
-- `/articles` 응답의 `pagination` 객체는 앱에서 디코딩 가능하지만, UI/load more 동작에는 아직 연결하지 않았다.
+- `/articles` 응답의 `pagination` 객체는 앱에서 디코딩하며, Native 뉴스 목록의 `더 보기` 버튼에 연결했다.
 - `/others`, `/tag/:keyword`, 현재 사용자 확인 endpoint, 좋아요 POST/DELETE JSON 계약은 아직 iOS에서 구현/검증 전이다.
 
 ## 공통 요청사항
@@ -410,4 +410,4 @@ Accept: application/json
 6. WebView 로그인 쿠키가 Native JSON 요청에 적용되는지 확인 — 미검증
 7. JSON POST/DELETE의 CSRF 처리 방식 확인 — 미확정
 
-현재 iOS 앱은 1번만으로 Native 뉴스 첫 페이지 MVP를 구현했다. 다음 Native 뉴스 확장 단계에서는 pagination/load more, 검색, 태그 필터, 좋아요 순서로 남은 계약을 검증한다.
+현재 iOS 앱은 1번으로 Native 뉴스 목록과 pagination/load more를 구현했다. 다음 Native 뉴스 확장 단계에서는 검색, 태그 필터, 좋아요 순서로 남은 계약을 검증한다.

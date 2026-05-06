@@ -54,6 +54,40 @@ struct ruby_newsTests {
     }
 
     @MainActor
+    @Test func articlesRequestEncodesPageQuery() async throws {
+        let baseURL = try #require(URL(string: "http://localhost:3000"))
+        let request = APIRequest(
+            path: "/articles",
+            queryItems: [URLQueryItem(name: "page", value: "2")]
+        ).urlRequest(relativeTo: baseURL)
+
+        #expect(request.url?.absoluteString == "http://localhost:3000/articles?page=2")
+        #expect(request.value(forHTTPHeaderField: "Accept") == "application/json")
+    }
+
+    @MainActor
+    @Test func newsViewModelAppendsNextPage() async throws {
+        var requestedPages: [Int?] = []
+        let responses = [
+            1: try articlesResponse(slugs: ["first-page-article"], page: 1, next: 2),
+            2: try articlesResponse(slugs: ["second-page-article"], page: 2, next: nil)
+        ]
+        let viewModel = NewsViewModel { page in
+            requestedPages.append(page)
+            return try #require(responses[page ?? 1])
+        }
+
+        await viewModel.load()
+        #expect(viewModel.articles.map(\.id) == ["first-page-article"])
+        #expect(viewModel.canLoadMore)
+
+        await viewModel.loadMore()
+        #expect(requestedPages == [nil, 2])
+        #expect(viewModel.articles.map(\.id) == ["first-page-article", "second-page-article"])
+        #expect(!viewModel.canLoadMore)
+    }
+
+    @MainActor
     @Test func articlesResponseDecodesServerFeedShape() async throws {
         let json = """
         {
@@ -94,5 +128,35 @@ struct ruby_newsTests {
         #expect(article.tags == ["ruby_native", "hotwire_native", "ios"])
         #expect(article.detailURL(relativeTo: URL(string: "http://localhost:3000")!).absoluteString == "http://localhost:3000/articles/10-years-helping-rails-devs")
         #expect(response.pagination?.nextPage == 2)
+    }
+
+    @MainActor
+    private func articlesResponse(slugs: [String], page: Int, next: Int?) throws -> ArticlesResponse {
+        let articles = slugs.map { slug in
+            """
+            {
+              "slug": "\(slug)",
+              "title": "\(slug)",
+              "url": "https://example.com/\(slug)",
+              "host": "example.com",
+              "likers_count": 0,
+              "posts_count": 0,
+              "summary_key": [],
+              "tags": []
+            }
+            """
+        }.joined(separator: ",")
+        let nextValue = next.map(String.init) ?? "null"
+        let json = """
+        {
+          "articles": [\(articles)],
+          "pagination": {
+            "page": \(page),
+            "next": \(nextValue),
+            "limit": 15
+          }
+        }
+        """
+        return try APIClient.decoder.decode(ArticlesResponse.self, from: Data(json.utf8))
     }
 }

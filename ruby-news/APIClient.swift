@@ -17,8 +17,9 @@ struct APIClient {
     var baseURL: URL = AppEnvironment.baseURL
     var session: URLSession = .shared
 
-    func articles() async throws -> ArticlesResponse {
-        let request = APIRequest(path: "/articles").urlRequest(relativeTo: baseURL)
+    func articles(page: Int? = nil) async throws -> ArticlesResponse {
+        let queryItems = page.map { [URLQueryItem(name: "page", value: String($0))] } ?? []
+        let request = APIRequest(path: "/articles", queryItems: queryItems).urlRequest(relativeTo: baseURL)
         let (data, response) = try await session.data(for: request)
 
         try validate(response)

@@ -25,13 +25,28 @@ struct NewsView: View {
                         }
                     }
                 } else {
-                    List(viewModel.articles) { article in
-                        Button {
-                            selectedArticle = article
-                        } label: {
-                            NewsArticleRow(article: article)
+                    List {
+                        ForEach(viewModel.articles) { article in
+                            Button {
+                                selectedArticle = article
+                            } label: {
+                                NewsArticleRow(article: article)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
+
+                        if viewModel.isLoadingMore {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                Spacer()
+                            }
+                        } else if viewModel.canLoadMore {
+                            Button("더 보기") {
+                                Task { await viewModel.loadMore() }
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
                     }
                     .refreshable {
                         await viewModel.load()
