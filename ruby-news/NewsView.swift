@@ -54,6 +54,14 @@ struct NewsView: View {
                 }
             }
             .navigationTitle("뉴스")
+            .searchable(text: $viewModel.searchQuery, prompt: "뉴스 검색")
+            .onSubmit(of: .search) {
+                Task { await viewModel.search() }
+            }
+            .onChange(of: viewModel.searchQuery) { oldValue, newValue in
+                guard !oldValue.isEmpty, newValue.isEmpty else { return }
+                Task { await viewModel.search() }
+            }
             .task {
                 guard viewModel.articles.isEmpty else { return }
                 await viewModel.load()

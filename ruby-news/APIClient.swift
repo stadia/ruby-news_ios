@@ -17,8 +17,15 @@ struct APIClient {
     var baseURL: URL = AppEnvironment.baseURL
     var session: URLSession = .shared
 
-    func articles(page: Int? = nil) async throws -> ArticlesResponse {
-        let queryItems = page.map { [URLQueryItem(name: "page", value: String($0))] } ?? []
+    func articles(page: Int? = nil, searchQuery: String? = nil) async throws -> ArticlesResponse {
+        var queryItems: [URLQueryItem] = []
+        if let searchQuery, !searchQuery.isEmpty {
+            queryItems.append(URLQueryItem(name: "search", value: searchQuery))
+        }
+        if let page {
+            queryItems.append(URLQueryItem(name: "page", value: String(page)))
+        }
+
         let request = APIRequest(path: "/articles", queryItems: queryItems).urlRequest(relativeTo: baseURL)
         let (data, response) = try await session.data(for: request)
 

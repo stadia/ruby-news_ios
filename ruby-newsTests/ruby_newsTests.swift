@@ -54,6 +54,21 @@ struct ruby_newsTests {
     }
 
     @MainActor
+    @Test func articlesRequestEncodesSearchAndPageQuery() async throws {
+        let baseURL = try #require(URL(string: "http://localhost:3000"))
+        let request = APIRequest(
+            path: "/articles",
+            queryItems: [
+                URLQueryItem(name: "search", value: "rails hotwire"),
+                URLQueryItem(name: "page", value: "2")
+            ]
+        ).urlRequest(relativeTo: baseURL)
+
+        #expect(request.url?.absoluteString == "http://localhost:3000/articles?search=rails%20hotwire&page=2")
+        #expect(request.value(forHTTPHeaderField: "Accept") == "application/json")
+    }
+
+    @MainActor
     @Test func articlesRequestEncodesPageQuery() async throws {
         let baseURL = try #require(URL(string: "http://localhost:3000"))
         let request = APIRequest(
@@ -72,7 +87,8 @@ struct ruby_newsTests {
             1: try articlesResponse(slugs: ["first-page-article"], page: 1, next: 2),
             2: try articlesResponse(slugs: ["second-page-article"], page: 2, next: nil)
         ]
-        let viewModel = NewsViewModel { page in
+        let viewModel = NewsViewModel { page, searchQuery in
+            #expect(searchQuery == nil)
             requestedPages.append(page)
             return try #require(responses[page ?? 1])
         }
@@ -85,6 +101,43 @@ struct ruby_newsTests {
         #expect(requestedPages == [nil, 2])
         #expect(viewModel.articles.map(\.id) == ["first-page-article", "second-page-article"])
         #expect(!viewModel.canLoadMore)
+    }
+
+    @MainActor
+    @Test func newsViewModelSearchesAndPaginatesWithQuery() async throws {
+        var requests: [(page: Int?, searchQuery: String?)] = []
+        let defaultResponse = try articlesResponse(slugs: ["default-article"], page: 1, next: nil)
+        let searchFirstPage = try articlesResponse(slugs: ["rails-first-page"], page: 1, next: 2)
+        let searchSecondPage = try articlesResponse(slugs: ["rails-second-page"], page: 2, next: nil)
+        let viewModel = NewsViewModel { page, searchQuery in
+            requests.append((page, searchQuery))
+
+            if searchQuery == "rails" && page == nil {
+                return searchFirstPage
+            } else if searchQuery == "rails" && page == 2 {
+                return searchSecondPage
+            } else if searchQuery == nil && page == nil {
+                return defaultResponse
+            }
+
+            Issue.record("Unexpected request page=\(String(describing: page)) search=\(String(describing: searchQuery))")
+            return defaultResponse
+        }
+
+        viewModel.searchQuery = "rails"
+        await viewModel.search()
+        #expect(viewModel.articles.map(\.id) == ["rails-first-page"])
+        #expect(viewModel.canLoadMore)
+
+        await viewModel.loadMore()
+        #expect(viewModel.articles.map(\.id) == ["rails-first-page", "rails-second-page"])
+        #expect(!viewModel.canLoadMore)
+
+        viewModel.searchQuery = ""
+        await viewModel.search()
+        #expect(viewModel.articles.map(\.id) == ["default-article"])
+        #expect(requests.map { $0.page } == [nil, 2, nil])
+        #expect(requests.map { $0.searchQuery } == ["rails", "rails", nil])
     }
 
     @MainActor
