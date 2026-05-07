@@ -39,6 +39,8 @@ extension HotwireScreen {
         init(startURL: URL) {
             currentURL = startURL
             navigator = Navigator(configuration: .init(name: "main", startLocation: startURL))
+            navigator.rootViewController.setNavigationBarHidden(true, animated: false)
+            navigator.modalRootViewController.setNavigationBarHidden(true, animated: false)
         }
 
         func startIfNeeded() {

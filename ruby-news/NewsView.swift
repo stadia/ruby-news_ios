@@ -82,8 +82,6 @@ struct NewsView: View {
                 NavigationStack {
                     HotwireScreen(route: .article(id: article.id))
                         .ignoresSafeArea(edges: .bottom)
-                        .navigationTitle(article.displayTitle)
-                        .navigationBarTitleDisplayMode(.inline)
                         .toolbar {
                             ToolbarItem(placement: .cancellationAction) {
                                 Button("닫기") {
