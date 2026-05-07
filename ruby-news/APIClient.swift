@@ -17,13 +17,13 @@ struct APIClient {
     var baseURL: URL = AppEnvironment.baseURL
     var session: URLSession = .shared
 
-    func articles(page: Int? = nil, searchQuery: String? = nil) async throws -> ArticlesResponse {
+    func articles(cursor: String? = nil, searchQuery: String? = nil) async throws -> ArticlesResponse {
         var queryItems: [URLQueryItem] = []
         if let searchQuery, !searchQuery.isEmpty {
             queryItems.append(URLQueryItem(name: "search", value: searchQuery))
         }
-        if let page {
-            queryItems.append(URLQueryItem(name: "page", value: String(page)))
+        if let cursor {
+            queryItems.append(URLQueryItem(name: "page", value: cursor))
         }
 
         let request = APIRequest(path: "/articles", queryItems: queryItems).urlRequest(relativeTo: baseURL)
@@ -33,12 +33,21 @@ struct APIClient {
         return try Self.decoder.decode(ArticlesResponse.self, from: data)
     }
 
-    func tag(keyword: String, page: Int? = nil) async throws -> ArticlesResponse {
-        let request = APIRequest.tag(keyword: keyword, page: page).urlRequest(relativeTo: baseURL)
+    func tag(keyword: String, cursor: String? = nil) async throws -> ArticlesResponse {
+        let request = APIRequest.tag(keyword: keyword, cursor: cursor).urlRequest(relativeTo: baseURL)
         let (data, response) = try await session.data(for: request)
 
         try validate(response)
         return try Self.decoder.decode(ArticlesResponse.self, from: data)
+    }
+
+    func me() async throws -> CurrentUser {
+        let request = APIRequest(path: "/account/edit").urlRequest(relativeTo: baseURL)
+        let (data, response) = try await session.data(for: request)
+
+        try validate(response)
+        let accountResponse = try Self.decoder.decode(AccountResponse.self, from: data)
+        return accountResponse.user
     }
 
     private func validate(_ response: URLResponse) throws {

@@ -38,12 +38,17 @@ struct NewsView: View {
                         }
 
                         ForEach(viewModel.articles) { article in
-                            NewsArticleRow(article: article) { tag in
+                            NewsArticleRow(article: article, onTagSelected: { tag in
                                 Task { await viewModel.selectTag(tag) }
-                            }
+                            }, onLikeTapped: {
+                                selectedArticle = article
+                            })
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 selectedArticle = article
+                            }
+                            .onAppear {
+                                Task { await viewModel.loadMoreIfNeeded(current: article) }
                             }
                         }
 
@@ -53,11 +58,6 @@ struct NewsView: View {
                                 ProgressView()
                                 Spacer()
                             }
-                        } else if viewModel.canLoadMore {
-                            Button("더 보기") {
-                                Task { await viewModel.loadMore() }
-                            }
-                            .frame(maxWidth: .infinity)
                         }
                     }
                     .refreshable {

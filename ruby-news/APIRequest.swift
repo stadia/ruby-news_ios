@@ -11,10 +11,10 @@ struct APIRequest {
     let path: String
     var queryItems: [URLQueryItem] = []
 
-    static func tag(keyword: String, page: Int? = nil) -> APIRequest {
+    static func tag(keyword: String, cursor: String? = nil) -> APIRequest {
         var queryItems: [URLQueryItem] = []
-        if let page {
-            queryItems.append(URLQueryItem(name: "page", value: String(page)))
+        if let cursor {
+            queryItems.append(URLQueryItem(name: "page", value: cursor))
         }
 
         return APIRequest(path: "/tag/\(encodedPathSegment(keyword))", queryItems: queryItems)

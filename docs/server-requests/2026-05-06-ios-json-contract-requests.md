@@ -181,25 +181,27 @@ Accept: application/json
 
 ### 4. 기사 좋아요
 
+현재 iOS Native 뉴스 목록에서는 좋아요 POST/DELETE를 직접 호출하지 않는다. 목록은 `liked`/`likers_count` 표시만 하고, 좋아요 토글은 기사 상세 Hotwire 화면의 기존 Turbo form에 위임한다.
+
+서버 JSON 계약 확인값:
+
 ```http
 POST /articles/:article_id/like
 Accept: application/json
+Content-Type: application/x-www-form-urlencoded
+
+authenticity_token=<csrf-token>&likeable_type=Article
 ```
 
-성공 응답 권장:
+성공 응답:
 
 ```json
 {
-  "article_id": "rails-8-1-released",
+  "likeable_type": "Article",
+  "likeable_slug": "rails-8-1-released",
   "liked": true,
   "likes_count": 13
 }
-```
-
-비로그인:
-
-```http
-401 Unauthorized
 ```
 
 ### 5. 기사 좋아요 취소
@@ -207,13 +209,17 @@ Accept: application/json
 ```http
 DELETE /articles/:article_id/like
 Accept: application/json
+Content-Type: application/x-www-form-urlencoded
+
+authenticity_token=<csrf-token>&likeable_type=Article
 ```
 
-성공 응답 권장:
+성공 응답:
 
 ```json
 {
-  "article_id": "rails-8-1-released",
+  "likeable_type": "Article",
+  "likeable_slug": "rails-8-1-released",
   "liked": false,
   "likes_count": 12
 }
@@ -223,7 +229,7 @@ Accept: application/json
 
 - `LikesController#create`
 - `LikesController#destroy`
-- 현재는 `turbo_stream`, `html` 중심으로 보이며 `json` format 추가 필요 가능성 있음
+- Hotwire 화면 내 form submit은 Turbo가 CSRF 토큰을 자동 첨부하므로 iOS에서 별도 처리하지 않는다.
 
 ### 6. 현재 사용자 확인
 
@@ -275,29 +281,31 @@ Accept: application/json
 
 초기 iOS 인증 전략은 Devise 웹 로그인 + 쿠키 세션 공유다. 서버 개발 쪽에서 다음을 확인해주면 iOS 구현 리스크가 줄어든다.
 
-### 확인 1. WebView 로그인 쿠키로 JSON 요청 인증 가능 여부
+### 확인 1. WebView 로그인 쿠키로 JSON 요청 인증 가능 여부 — ✅ 확인 완료
 
-시나리오:
+2026-05-07 검증 결과:
 
-1. iOS Hotwire Native에서 `/login` 접속
-2. Devise 로그인 완료
-3. iOS Native `URLSession`에서 `GET /articles` with `Accept: application/json`
-4. 서버가 같은 Devise 세션으로 `liked` 여부를 계산할 수 있어야 함
+- Devise 로그인(`POST /login`) 성공 → `_al_news_session` 쿠키 획득 확인
+- 세션 쿠키로 `GET /articles` JSON 요청 시 서버가 인식함 (session dump에 `warden.user.user.key` 확인)
+- iOS Hotwire Native `Navigator.sessionDidFinishRequest`가 WKWebView 쿠키를 `HTTPCookieStorage.shared`로 자동 복사함
+- 따라서 별도 쿠키 bridge 구현 불필요. `URLSession.shared`이 `HTTPCookieStorage.shared`의 쿠키를 자동 사용
 
-### 확인 2. POST/DELETE JSON 요청의 CSRF 처리
+`/articles` JSON 응답의 `liked` 필드 포함 확인 완료. Native 목록은 이 값을 표시용으로 사용한다.
 
-대상:
+### 확인 2. POST/DELETE JSON 요청의 CSRF 처리 — ✅ 방향 확정
 
-- `POST /articles/:article_id/like`
-- `DELETE /articles/:article_id/like`
-- 추후 `POST /posts`, `POST /articles/:article_id/posts`
+2026-05-07/08 검증 결과:
 
-확인할 것:
+- `POST /articles/:article_id/like` with JSON body → **422 InvalidAuthenticityToken**
+- `X-CSRF-Token` 헤더만으로도 현재 서버에서 422 발생
+- `application/x-www-form-urlencoded` body에 `authenticity_token=<token>&likeable_type=Article`을 보내면 성공 확인
 
-- JSON 요청도 CSRF token이 필요한지
-- 필요한 경우 token을 iOS가 어디서 얻어야 하는지
-- HTML meta tag token을 WebView에서 추출해야 하는지
-- 아니면 same-site cookie 기반으로 통과 가능한지
+제품 방향:
+
+- Native 뉴스 목록에서는 좋아요 POST/DELETE를 직접 호출하지 않는다.
+- 목록 하트는 `liked`/`likers_count` 표시와 상세 진입 유도만 담당한다.
+- 실제 좋아요 토글은 상세 Hotwire 화면의 기존 `button_to`/Turbo form에 위임한다. Turbo가 CSRF 토큰을 자동 첨부한다.
+- 따라서 현재 iOS 앱에는 CSRF 토큰 브릿지가 필요하지 않다. 추후 Native toolbar 버튼으로 WebView form submit을 트리거해야 하면 BridgeComponent 패턴을 검토한다.
 
 ### 확인 3. Devise timeout/rememberable 정책
 
@@ -404,12 +412,13 @@ Accept: application/json
 
 서버 쪽에서 최소한 아래가 준비되면 iOS Native 뉴스 MVP를 구현할 수 있다.
 
-1. `GET /articles` JSON — 완료/검증됨
+1. `GET /articles` JSON — ✅ 완료/검증됨 (커서 기반 pagination 포함)
 2. `GET /others` JSON — 미검증
 3. `GET /tag/:keyword` JSON — 미검증
-4. 현재 사용자 확인 JSON endpoint 확정 — 미확정
-5. `POST/DELETE /articles/:id/like` JSON — 미검증
-6. WebView 로그인 쿠키가 Native JSON 요청에 적용되는지 확인 — 미검증
-7. JSON POST/DELETE의 CSRF 처리 방식 확인 — 미확정
+4. 현재 사용자 확인 JSON endpoint 확정 — ❌ `/account/edit`은 HTML만 반환. 서버 JSON format 추가 필요
+5. `POST/DELETE /articles/:id/like` JSON — ❌ CSRF 토큰 필요 확인. JSON format 응답도 서버에 추가 필요
+6. WebView 로그인 쿠키 → Native JSON 인증 — ✅ 확인 완료. Hotwire Native 자동 복사
+7. JSON POST/DELETE의 CSRF 처리 — ⚠️ CSRF 토큰 필요 확인
+8. `/articles` JSON에 `liked` 필드 포함 — ❌ 서버에서 아직 미포함. 비로그인 시 `false`, 로그인 시 실제 값 필요
 
-현재 iOS 앱은 1번으로 Native 뉴스 목록과 pagination/load more를 구현했다. 다음 Native 뉴스 확장 단계에서는 검색, 태그 필터, 좋아요 순서로 남은 계약을 검증한다.
+현재 iOS 앱은 1번으로 Native 뉴스 목록과 무한 스크롤(커서 기반 pagination)을 구현했다. 다음 후보는 좋아요 interaction과 로그인/세션 분기 UI다.

@@ -10,6 +10,7 @@ import SwiftUI
 struct NewsArticleRow: View {
     let article: NewsArticle
     var onTagSelected: ((String) -> Void)?
+    var onLikeTapped: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -29,7 +30,18 @@ struct NewsArticleRow: View {
                     Label(host, systemImage: "globe")
                 }
 
-                Label("\(article.likersCount)", systemImage: "heart")
+                Button {
+                    onLikeTapped?()
+                } label: {
+                    Label(
+                        "\(article.likersCount)",
+                        systemImage: article.liked ? "heart.fill" : "heart"
+                    )
+                    .foregroundStyle(article.liked ? .red : .secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("좋아요 \(article.likersCount)개, 상세에서 반응하기")
+
                 Label("\(article.postsCount)", systemImage: "bubble")
             }
             .font(.caption)

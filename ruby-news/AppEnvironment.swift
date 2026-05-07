@@ -8,7 +8,7 @@
 import Foundation
 
 enum AppEnvironment {
-    #if DEBUG
+    #if DEBUG && targetEnvironment(simulator)
     static let baseURL = URL(string: "http://localhost:3000")!
     #else
     static let baseURL = URL(string: "https://ruby-news.kr")!

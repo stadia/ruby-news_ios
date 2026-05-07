@@ -11,7 +11,7 @@ import Observation
 @MainActor
 @Observable
 final class NewsViewModel {
-    typealias LoadArticles = (Int?, String?, String?) async throws -> ArticlesResponse
+    typealias LoadArticles = (String?, String?, String?) async throws -> ArticlesResponse
 
     private let loadArticles: LoadArticles
     private var activeSearchQuery: String?
@@ -29,11 +29,11 @@ final class NewsViewModel {
     }
 
     init(apiClient: APIClient = APIClient()) {
-        self.loadArticles = { page, searchQuery, tag in
+        self.loadArticles = { cursor, searchQuery, tag in
             if let tag {
-                try await apiClient.tag(keyword: tag, page: page)
+                try await apiClient.tag(keyword: tag, cursor: cursor)
             } else {
-                try await apiClient.articles(page: page, searchQuery: searchQuery)
+                try await apiClient.articles(cursor: cursor, searchQuery: searchQuery)
             }
         }
     }
@@ -65,13 +65,14 @@ final class NewsViewModel {
     }
 
     func loadMore() async {
-        guard canLoadMore, let nextPage = pagination?.nextPage else { return }
+        guard canLoadMore else { return }
+        let nextCursor = pagination?.nextPage
 
         isLoadingMore = true
         errorMessage = nil
 
         do {
-            let response = try await loadArticles(nextPage, activeSearchQuery, selectedTag)
+            let response = try await loadArticles(nextCursor, activeSearchQuery, selectedTag)
             articles.append(contentsOf: response.articles)
             pagination = response.pagination
         } catch {
@@ -79,6 +80,13 @@ final class NewsViewModel {
         }
 
         isLoadingMore = false
+    }
+
+    func loadMoreIfNeeded(current article: NewsArticle) async {
+        let threshold = max(1, articles.count - 5)
+        guard let index = articles.firstIndex(where: { $0.id == article.id }) else { return }
+        guard index >= threshold else { return }
+        await loadMore()
     }
 
     private func loadFirstPage() async {
@@ -101,3 +109,4 @@ final class NewsViewModel {
         return trimmedQuery.isEmpty ? nil : trimmedQuery
     }
 }
+

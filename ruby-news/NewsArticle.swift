@@ -13,8 +13,8 @@ struct ArticlesResponse: Decodable {
 }
 
 struct Pagination: Decodable, Equatable {
-    let page: Int?
-    let nextPage: Int?
+    let page: String?
+    let nextPage: String?
     let limit: Int?
 
     enum CodingKeys: String, CodingKey {
@@ -26,10 +26,16 @@ struct Pagination: Decodable, Equatable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        page = try container.decodeIfPresent(Int.self, forKey: .page)
-        nextPage = try container.decodeIfPresent(Int.self, forKey: .nextPage)
-            ?? container.decodeIfPresent(Int.self, forKey: .next)
+        page = try container.decodeIfPresent(String.self, forKey: .page)
+        nextPage = try container.decodeIfPresent(String.self, forKey: .nextPage)
+            ?? container.decodeIfPresent(String.self, forKey: .next)
         limit = try container.decodeIfPresent(Int.self, forKey: .limit)
+    }
+
+    init(page: String? = nil, nextPage: String? = nil, limit: Int? = nil) {
+        self.page = page
+        self.nextPage = nextPage
+        self.limit = limit
     }
 }
 
@@ -40,7 +46,8 @@ struct NewsArticle: Decodable, Identifiable, Equatable {
     let url: URL
     let host: String?
     let isRelated: Bool?
-    let likersCount: Int
+    var likersCount: Int
+    var liked: Bool
     let postsCount: Int
     let publishedAt: Date?
     let summaryKey: [String]
@@ -58,6 +65,7 @@ struct NewsArticle: Decodable, Identifiable, Equatable {
         case host
         case isRelated
         case likersCount
+        case liked
         case postsCount
         case publishedAt
         case summaryKey
@@ -73,6 +81,7 @@ struct NewsArticle: Decodable, Identifiable, Equatable {
         host = try container.decodeIfPresent(String.self, forKey: .host)
         isRelated = try container.decodeIfPresent(Bool.self, forKey: .isRelated) ?? false
         likersCount = try container.decodeIfPresent(Int.self, forKey: .likersCount) ?? 0
+        liked = try container.decodeIfPresent(Bool.self, forKey: .liked) ?? false
         postsCount = try container.decodeIfPresent(Int.self, forKey: .postsCount) ?? 0
         summaryKey = try container.decodeIfPresent([String].self, forKey: .summaryKey) ?? []
         tags = try container.decodeIfPresent([String].self, forKey: .tags) ?? []
