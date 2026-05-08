@@ -74,9 +74,8 @@ struct NewsView: View {
                 guard !oldValue.isEmpty, newValue.isEmpty else { return }
                 Task { await viewModel.search() }
             }
-            .task {
-                guard viewModel.articles.isEmpty else { return }
-                await viewModel.load()
+            .onAppear {
+                Task { await viewModel.load() }
             }
             .sheet(item: $selectedArticle) { article in
                 NavigationStack {
