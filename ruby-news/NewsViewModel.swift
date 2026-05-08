@@ -12,8 +12,10 @@ import Observation
 @Observable
 final class NewsViewModel {
     typealias LoadArticles = (String?, String?, String?) async throws -> ArticlesResponse
+    typealias ToggleLike = (NewsArticle) async throws -> LikeResponse
 
     private let loadArticles: LoadArticles
+    private let toggleLikeAction: ToggleLike
     private var activeSearchQuery: String?
 
     var articles: [NewsArticle] = []
@@ -28,18 +30,39 @@ final class NewsViewModel {
         pagination?.nextPage != nil && !isLoading && !isLoadingMore
     }
 
-    init(apiClient: APIClient = APIClient()) {
+    init(apiClient: APIClient = APIClient(), tokenStore: TokenStore = KeychainTokenStore()) {
+        var configuredClient = apiClient
+        configuredClient.tokenProvider = {
+            try? tokenStore.load()
+        }
+        configuredClient.onTokenRefreshed = { session in
+            try? tokenStore.save(session)
+        }
+
         self.loadArticles = { cursor, searchQuery, tag in
             if let tag {
-                try await apiClient.tag(keyword: tag, cursor: cursor)
+                try await configuredClient.tag(keyword: tag, cursor: cursor)
             } else {
-                try await apiClient.articles(cursor: cursor, searchQuery: searchQuery)
+                try await configuredClient.articles(cursor: cursor, searchQuery: searchQuery)
+            }
+        }
+        self.toggleLikeAction = { article in
+            if article.liked {
+                try await configuredClient.unlike(articleSlug: article.slug)
+            } else {
+                try await configuredClient.like(articleSlug: article.slug)
             }
         }
     }
 
-    init(_ loadArticles: @escaping LoadArticles) {
+    init(loadArticles: @escaping LoadArticles,
+         toggleLike: @escaping ToggleLike = { _ in throw APIError.unauthorized }) {
         self.loadArticles = loadArticles
+        self.toggleLikeAction = toggleLike
+    }
+
+    convenience init(_ loadArticles: @escaping LoadArticles) {
+        self.init(loadArticles: loadArticles)
     }
 
     func load() async {
@@ -87,6 +110,33 @@ final class NewsViewModel {
         guard let index = articles.firstIndex(where: { $0.id == article.id }) else { return }
         guard index >= threshold else { return }
         await loadMore()
+    }
+
+    func toggleLike(_ article: NewsArticle) async {
+        guard let index = articles.firstIndex(where: { $0.id == article.id }) else { return }
+
+        errorMessage = nil
+        let originalArticle = articles[index]
+        var optimisticArticle = originalArticle
+        optimisticArticle.liked.toggle()
+        optimisticArticle.likersCount += optimisticArticle.liked ? 1 : -1
+        optimisticArticle.likersCount = max(0, optimisticArticle.likersCount)
+        articles[index] = optimisticArticle
+
+        do {
+            let response = try await toggleLikeAction(originalArticle)
+            articles[index].liked = response.liked
+            articles[index].likersCount = response.likesCount
+        } catch APIError.unauthorized {
+            articles[index] = originalArticle
+            errorMessage = "로그인이 필요합니다."
+        } catch APIError.unacceptableStatusCode(401) {
+            articles[index] = originalArticle
+            errorMessage = "로그인이 필요합니다."
+        } catch {
+            articles[index] = originalArticle
+            errorMessage = "좋아요 처리에 실패했습니다."
+        }
     }
 
     private func loadFirstPage() async {

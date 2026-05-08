@@ -279,7 +279,7 @@ Accept: application/json
 
 ## 세션/쿠키/CSRF 확인 요청
 
-초기 iOS 인증 전략은 Devise 웹 로그인 + 쿠키 세션 공유다. 서버 개발 쪽에서 다음을 확인해주면 iOS 구현 리스크가 줄어든다.
+현재 로그인 자체는 Native JSON `POST /login`(`Accept: application/json`)으로 이동했지만, Hotwire 화면은 계속 Devise 쿠키 세션을 사용한다. 따라서 서버 개발 쪽에서 다음을 확인해주면 iOS 구현 리스크가 줄어든다.
 
 ### 확인 1. WebView 로그인 쿠키로 JSON 요청 인증 가능 여부 — ✅ 확인 완료
 

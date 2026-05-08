@@ -1,91 +1,116 @@
-# 서버 요청: iOS Native JSON 요청용 JWT 인증 계약
+# iOS Native JSON 요청용 JWT 인증 계약
 
-## 목적
+## 확인 결과
 
-현재 iOS 앱은 Hotwire Native 화면에서는 Devise 쿠키 세션을 그대로 사용하고, Native SwiftUI 화면에서는 `Accept: application/json`으로 기존 endpoint를 호출한다.
+iOS는 로그인만 Native JSON으로 처리하고, 이후 보호된 Native 요청은 JWT Bearer 인증을 사용한다.
 
-좋아요처럼 Native에서 직접 POST/DELETE를 호출해야 하는 기능은 Rails CSRF 정책 때문에 쿠키 세션만으로는 안정적으로 처리하기 어렵다. 서버가 JWT 인증을 지원하면 iOS Native JSON 요청은 `Authorization: Bearer <token>`을 사용하고, Hotwire 화면은 기존 쿠키 세션을 유지하는 하이브리드 구조로 간다.
+현재 서버가 이미 지원하는 것:
 
-## 기본 원칙
+| 항목 | 결과 |
+|---|---|
+| Native 로그인 | `POST /login` + `Accept: application/json` |
+| access token 전달 | response header `Authorization: Bearer <access_token>` |
+| refresh token 전달 | response body `refresh_token` |
+| refresh | `POST /api/v1/auth/refresh` |
+| public 뉴스 목록 | `/articles`, `/tag/:keyword`, `/others` 비로그인 접근 가능 |
+| 현재 사용자 조회 | `GET /account/edit` JSON |
 
-- Hotwire Native 화면: 기존 Devise 쿠키 세션 유지
-- Native JSON 요청: `Authorization: Bearer <access_token>` 사용
-- Native 요청은 계속 기존 endpoint를 사용하고 `/api/v1` namespace는 만들지 않는다
-- Native 요청은 항상 `Accept: application/json`
-- JWT 인증 JSON 요청은 CSRF 검증 대상에서 제외하거나 `null_session`으로 처리한다
+## iOS 최종 제품 방향
 
-## 필요한 서버 계약
+- 로그인은 Native SwiftUI 폼 + JSON 요청으로 처리한다.
+- 회원가입/계정 설정/기사 상세/피드는 기존 Hotwire Native를 유지한다.
+- Native 로그인 응답에서 access token과 refresh token을 모두 읽어 Keychain에 저장한다.
+- bootstrap endpoint는 사용하지 않는다.
+- Native mutation(좋아요 등)은 `Authorization: Bearer <access_token>`으로 호출한다.
 
-### 1. 현재 사용자 + JWT 발급
-
-권장 endpoint:
+## 로그인 계약
 
 ```http
-GET /account/edit
+POST /login
 Accept: application/json
+Content-Type: application/json
+
+{ "user": { "email": "jeff@example.com", "password": "secret" } }
 ```
 
-로그인 상태 응답:
+성공 응답 헤더:
+
+```http
+Authorization: Bearer <access_token>
+```
+
+성공 응답 body:
 
 ```json
 {
   "user": {
     "id": 1,
-    "email": "stadia@gmail.com",
-    "name": "jeff",
+    "email": "jeff@example.com",
+    "name": "Jeff",
     "username": "jeff",
-    "avatar_url": "https://ruby-news.kr/..."
+    "avatar_url": null
   },
-  "auth": {
-    "access_token": "jwt...",
-    "token_type": "Bearer",
-    "expires_at": "2026-05-08T12:00:00Z"
+  "refresh_token": "raw-refresh-token"
+}
+```
+
+실패 응답:
+
+- `401 Unauthorized`
+- body는 기존 Devise JSON 형식 유지 가능
+
+## 현재 사용자 조회 계약
+
+```http
+GET /account/edit
+Accept: application/json
+Authorization: Bearer <access_token>
+```
+
+성공 응답 예시:
+
+```json
+{
+  "user": {
+    "id": 1,
+    "email": "jeff@example.com",
+    "name": "Jeff",
+    "username": "jeff",
+    "avatar_url": null
   }
 }
 ```
 
-비로그인 응답:
+비로그인/무효 token:
 
 ```http
 401 Unauthorized
 ```
 
-```json
-{ "error": "로그인이 필요합니다." }
-```
-
-비고:
-
-- iOS는 Hotwire `/login` 성공 후 `/account/edit` JSON을 호출해 `user`와 `access_token`을 갱신한다.
-- `expires_at`은 optional이지만 있으면 iOS가 만료 전 refresh 판단에 사용할 수 있다.
-
-### 2. 토큰 refresh 또는 재발급
-
-초기 구현은 단순화를 위해 `/account/edit` JSON 재호출로 token 재발급이 가능하면 충분하다.
-
-가능하면 별도 endpoint도 허용:
+## Public 뉴스 목록 계약
 
 ```http
-POST /account/token
+GET /articles
 Accept: application/json
-Authorization: Bearer <old_token>
+Authorization: Bearer <access_token>   # optional
 ```
 
-응답:
+동작:
 
-```json
-{
-  "auth": {
-    "access_token": "new-jwt...",
-    "token_type": "Bearer",
-    "expires_at": "2026-05-08T13:00:00Z"
-  }
-}
+- Authorization 없음: `200 OK`
+- Authorization 있음: `200 OK`, 현재 사용자 기준 `liked` 계산
+- token 없음은 401이 아니어야 한다
+
+태그/기타 뉴스도 동일 원칙:
+
+```http
+GET /tag/:keyword
+GET /others
 ```
 
-### 3. 좋아요 JSON 요청
+## 보호된 Native mutation
 
-JWT 인증 요청 예시:
+좋아요는 JWT 인증을 사용한다.
 
 ```http
 POST /articles/:article_id/like
@@ -116,57 +141,53 @@ Authorization: Bearer <access_token>
 }
 ```
 
-상태 코드:
+실패 응답:
 
-- POST 성공: `201 Created` 또는 `200 OK`
-- DELETE 성공: `200 OK`
-- 인증 누락/만료: `401 Unauthorized`
-- 권한 없음: `403 Forbidden`
-- validation 실패: `422 Unprocessable Entity`
+- access 누락/만료/변조: `401 { "error": "unauthorized" }`
+- validation 실패: `422 ...`
 
-### 4. 인증 적용 범위
+## Refresh 계약
 
-JWT 인증이 필요한 Native endpoint:
+```http
+POST /api/v1/auth/refresh
+Accept: application/json
+Content-Type: application/json
 
-- `GET /account/edit` JSON: token 발급/현재 사용자 확인
-- `POST /articles/:article_id/like`
-- `DELETE /articles/:article_id/like`
-- 추후 Native feed/post/follow 요청
+{ "refresh_token": "old-refresh-token" }
+```
 
-JWT 인증이 optional인 endpoint:
+성공 응답:
 
-- `GET /articles` JSON
-- `GET /tag/:keyword` JSON
-- `GET /others` JSON
+```json
+{
+  "access_token": "new-access-token",
+  "refresh_token": "new-refresh-token",
+  "expires_in": 900
+}
+```
 
-optional endpoint는 `Authorization`이 있으면 사용자별 `liked` 값을 계산하고, 없으면 `liked: false`로 내려준다.
+실패 응답:
 
-## iOS 쪽 기대 동작
+- `401 { "error": "invalid_refresh_token" }`
 
-1. 앱 시작
-   - 저장된 JWT가 있으면 Native JSON 요청에 사용
-   - 동시에 `/account/edit` refresh로 사용자/token 상태 확인 가능
-2. Hotwire 로그인 성공 후
-   - `/account/edit` JSON 호출
-   - `CurrentUser`와 JWT를 저장
-3. Native 좋아요
-   - `Authorization: Bearer`로 POST/DELETE
-   - 성공 시 서버 응답으로 `liked`, `likes_count` 반영
-   - 401이면 token clear + 로그인 유도
-4. 로그아웃
-   - Hotwire logout 후 iOS 저장 token/user 삭제
+## 로그아웃
 
-## 보안 요구사항
+현재 서버 구현 기준:
 
-- JWT는 HTTPS에서만 사용
-- iOS는 Keychain에 token 저장
-- token 만료/회수 정책 필요
-- JWT 인증 요청은 CSRF 보호 대상에서 제외 가능. Bearer token 자체가 인증 수단이므로 쿠키 CSRF와 분리
-- 토큰 payload에 민감 정보는 넣지 않는다
+```http
+GET /logout
+Accept: application/json
+Authorization: Bearer <access_token>
+```
 
-## 확인 필요
+성공 시 iOS는 Keychain의 access/refresh token과 current user cache를 삭제한다.
 
-- JWT 만료 시간
-- refresh 방식: `/account/edit` 재발급으로 충분한지, 별도 refresh endpoint가 필요한지
-- logout 시 JWT revoke가 필요한지
-- `GET /articles`에 Authorization이 있을 때 `liked` 계산이 정상 동작하는지
+## iOS 동작 요약
+
+1. 비로그인 사용자가 Native 로그인 화면에서 이메일/비밀번호 입력
+2. `POST /login` 호출 (`Accept: application/json`)
+3. response header에서 access token 추출
+4. response body에서 `refresh_token`과 `user` 추출
+5. Keychain 저장 후 Native 세션 상태를 로그인으로 전환
+6. 이후 Native 요청은 Bearer token 사용
+7. 401이면 refresh 후 1회 재시도, 실패 시 token clear

@@ -40,7 +40,7 @@ struct NewsArticleRow: View {
                     .foregroundStyle(article.liked ? .red : .secondary)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("좋아요 \(article.likersCount)개, 상세에서 반응하기")
+                .accessibilityLabel(article.liked ? "좋아요 취소, 현재 \(article.likersCount)개" : "좋아요, 현재 \(article.likersCount)개")
 
                 Label("\(article.postsCount)", systemImage: "bubble")
             }

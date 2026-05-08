@@ -21,8 +21,11 @@ struct ProfileView: View {
             }
             .navigationTitle("내 정보")
         }
-        .task {
-            await sessionStore.refresh()
+        .onAppear {
+            sessionStore.restoreSession()
+            Task { @MainActor in
+                await sessionStore.refresh()
+            }
         }
     }
 
@@ -60,6 +63,22 @@ struct ProfileView: View {
             } label: {
                 Text("계정 설정")
             }
+
+            Button {
+                Task { @MainActor in
+                    await sessionStore.logout()
+                }
+            } label: {
+                if sessionStore.isLoading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                } else {
+                    Text("로그아웃")
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .buttonStyle(.bordered)
+            .disabled(sessionStore.isLoading)
         }
         .padding()
     }
@@ -75,8 +94,7 @@ struct ProfileView: View {
                 .multilineTextAlignment(.center)
 
             NavigationLink {
-                HotwireScreen(route: .login)
-                    .ignoresSafeArea(edges: .bottom)
+                NativeLoginView(sessionStore: sessionStore)
             } label: {
                 Text("로그인")
                     .frame(maxWidth: .infinity)

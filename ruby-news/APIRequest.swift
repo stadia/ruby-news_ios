@@ -20,13 +20,16 @@ struct APIRequest {
         return APIRequest(path: "/tag/\(encodedPathSegment(keyword))", queryItems: queryItems)
     }
 
-    func urlRequest(relativeTo baseURL: URL = AppEnvironment.baseURL) -> URLRequest {
+    func urlRequest(relativeTo baseURL: URL = AppEnvironment.baseURL, accessToken: String? = nil) -> URLRequest {
         var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)!
         components.percentEncodedPath = path
         components.queryItems = queryItems.isEmpty ? nil : queryItems
 
         var request = URLRequest(url: components.url!)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let accessToken {
+            request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        }
         return request
     }
 

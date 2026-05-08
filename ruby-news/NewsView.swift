@@ -26,6 +26,12 @@ struct NewsView: View {
                     }
                 } else {
                     List {
+                        if let errorMessage = viewModel.errorMessage, !viewModel.articles.isEmpty {
+                            Text(errorMessage)
+                                .font(.footnote)
+                                .foregroundStyle(.red)
+                        }
+
                         if let selectedTag = viewModel.selectedTag {
                             HStack {
                                 Label("#\(selectedTag)", systemImage: "tag")
@@ -41,7 +47,7 @@ struct NewsView: View {
                             NewsArticleRow(article: article, onTagSelected: { tag in
                                 Task { await viewModel.selectTag(tag) }
                             }, onLikeTapped: {
-                                selectedArticle = article
+                                Task { await viewModel.toggleLike(article) }
                             })
                             .contentShape(Rectangle())
                             .onTapGesture {

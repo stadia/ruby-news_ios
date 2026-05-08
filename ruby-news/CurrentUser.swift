@@ -24,4 +24,19 @@ struct CurrentUser: Decodable, Identifiable, Equatable {
 
 struct AccountResponse: Decodable {
     let user: CurrentUser
+    let auth: AccountAuthResponse?
+}
+
+struct AccountAuthResponse: Decodable {
+    let accessToken: String
+    let refreshToken: String?
+    let expiresIn: Int
+
+    func toAuthSession() -> AuthSession {
+        AuthSession(
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+            expiresAt: Date().addingTimeInterval(TimeInterval(expiresIn))
+        )
+    }
 }

@@ -27,8 +27,11 @@ struct HotwireScreen: UIViewControllerRepresentable {
 }
 
 extension HotwireScreen {
+    @MainActor
     final class Coordinator {
         private let navigator: Navigator
+        private let webSessionBridge: WebSessionBridge
+        private var sessionChangeObserver: NSObjectProtocol?
         private var currentURL: URL
         private var hasStarted = false
 
@@ -38,16 +41,35 @@ extension HotwireScreen {
 
         init(startURL: URL) {
             currentURL = startURL
+            webSessionBridge = WebSessionBridge(baseURL: startURL)
             navigator = Navigator(configuration: .init(name: "main", startLocation: startURL))
             navigator.rootViewController.setNavigationBarHidden(true, animated: false)
             navigator.modalRootViewController.setNavigationBarHidden(true, animated: false)
+            sessionChangeObserver = NotificationCenter.default.addObserver(
+                forName: WebSessionBridge.didChangeNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor in
+                    self?.reloadForSessionChange()
+                }
+            }
+        }
+
+        deinit {
+            if let sessionChangeObserver {
+                NotificationCenter.default.removeObserver(sessionChangeObserver)
+            }
         }
 
         func startIfNeeded() {
             guard !hasStarted else { return }
 
             hasStarted = true
-            navigator.start()
+            Task { @MainActor in
+                await webSessionBridge.syncSharedCookiesToWebView()
+                navigator.start()
+            }
         }
 
         func routeIfNeeded(to url: URL) {
@@ -58,6 +80,14 @@ extension HotwireScreen {
 
             navigator.clearAll(animated: false)
             navigator.route(url, options: VisitOptions(action: .replace))
+        }
+
+        private func reloadForSessionChange() {
+            Task { @MainActor in
+                await webSessionBridge.syncSharedCookiesToWebView()
+                guard hasStarted else { return }
+                navigator.reload()
+            }
         }
     }
 }
