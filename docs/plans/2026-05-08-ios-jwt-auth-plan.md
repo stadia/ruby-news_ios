@@ -36,12 +36,13 @@
 - 프로필 탭 비로그인 상태에서 Native 로그인 화면 진입
 - 로그인 관련 unit test 추가
 
-남은 작업:
+검증 완료:
 
-1. Native 좋아요/로그아웃 수동 검증
-2. refresh가 실서버에서도 401 → 재시도로 정상 동작하는지 수동 검증
-3. cold launch 이후 Web session 복원 필요 여부 검토
-4. Hotwire 내부 logout 감지 방식 검토
+1. cold launch 이후 `피드`/`계정 설정` 로그인 유지 확인
+2. Hotwire 내부 logout 후 Native 프로필 상태 즉시 비로그인 전환 확인
+3. Native 좋아요/로그아웃 동작 확인
+4. refresh가 실서버에서도 401 → 재시도로 정상 동작하는지 확인
+5. 기사 상세 Hotwire 좋아요 동작 확인
 
 ## 구현 Phase
 
@@ -71,9 +72,9 @@
 
 ### Phase 3 — Refresh 연결
 
-- [ ] 보호된 Native 요청에서 401 시 refresh 시도
-- [ ] refresh 성공 후 원 요청 1회 재시도
-- [ ] refresh 실패 시 token clear + 로그인 유도
+- [x] 보호된 Native 요청에서 401 시 refresh 시도
+- [x] refresh 성공 후 원 요청 1회 재시도
+- [x] refresh 실패 시 token clear + 로그인 유도
 
 주의:
 
@@ -97,8 +98,12 @@
 - [x] login/logout 시 Hotwire session change notification broadcast
 - [x] 기존 Hotwire 화면 auth 변경 시 `navigator.reload()` 재실행
 - [x] 프로필 화면 재노출 시 `refresh()` 재실행으로 기본 동기화
-- [ ] cold launch에서도 Web session 복원이 필요한지 수동 검증
-- [ ] Hotwire 내부 logout 직후 즉시 감지 필요 여부 검토
+- [x] `_al_news_session` Keychain 저장소 추가
+- [x] 앱 시작 시 persisted cookie를 `HTTPCookieStorage.shared`로 복원
+- [x] cold launch에서도 Web session이 실제로 유지되는지 수동 검증
+- [x] 보호 Hotwire 화면 request 완료 후 cookie-auth `/account/edit` 확인으로 Web logout/desync 감지
+- [x] Web logout/desync 감지 시 Native token/user clear broadcast
+- [x] 실사용 흐름에서 false positive 없이 자연스럽게 동작하는지 수동 검증
 
 ### Phase 6 — JWT refresh retry
 
@@ -107,7 +112,7 @@
 - [x] refresh된 token을 `TokenStore`에 저장
 - [x] refresh된 token을 `SessionStore.authSession` 메모리 상태에도 반영
 - [x] `APIClient.like()` / `SessionStore.refresh()` 경로 테스트 추가
-- [ ] 실서버에서 access token 만료 상황 수동 검증
+- [x] 실서버에서 access token 만료 상황 수동 검증
 
 ## 테스트 전략
 
@@ -133,4 +138,3 @@
 
 - 로그인 JSON 요청의 `Accept: application/json`/`Content-Type: application/json` 계약이 서버에서 계속 유지되는지
 - 로그아웃 시 refresh token revoke 범위
-- Native 좋아요 endpoint의 실제 JWT 인증 동작 수동 검증

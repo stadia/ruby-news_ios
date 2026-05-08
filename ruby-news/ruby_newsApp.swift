@@ -9,6 +9,10 @@ import SwiftUI
 
 @main
 struct ruby_newsApp: App {
+    init() {
+        WebSessionBridge().restorePersistedCookiesToSharedStorage()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

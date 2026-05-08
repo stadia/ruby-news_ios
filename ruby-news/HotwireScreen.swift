@@ -29,6 +29,7 @@ struct HotwireScreen: UIViewControllerRepresentable {
 extension HotwireScreen {
     @MainActor
     final class Coordinator {
+        private let navigatorDelegate: NavigatorAuthDelegate
         private let navigator: Navigator
         private let webSessionBridge: WebSessionBridge
         private var sessionChangeObserver: NSObjectProtocol?
@@ -42,7 +43,15 @@ extension HotwireScreen {
         init(startURL: URL) {
             currentURL = startURL
             webSessionBridge = WebSessionBridge(baseURL: startURL)
-            navigator = Navigator(configuration: .init(name: "main", startLocation: startURL))
+            navigatorDelegate = NavigatorAuthDelegate(
+                monitor: WebAuthEventMonitor(
+                    baseURL: startURL,
+                    handleExternalLogout: {
+                        await SessionStore.handleExternalLogout()
+                    }
+                )
+            )
+            navigator = Navigator(configuration: .init(name: "main", startLocation: startURL), delegate: navigatorDelegate)
             navigator.rootViewController.setNavigationBarHidden(true, animated: false)
             navigator.modalRootViewController.setNavigationBarHidden(true, animated: false)
             sessionChangeObserver = NotificationCenter.default.addObserver(
@@ -88,6 +97,22 @@ extension HotwireScreen {
                 guard hasStarted else { return }
                 navigator.reload()
             }
+        }
+    }
+
+    final class NavigatorAuthDelegate: NSObject, NavigatorDelegate {
+        private let monitor: WebAuthEventMonitor
+
+        init(monitor: WebAuthEventMonitor) {
+            self.monitor = monitor
+        }
+
+        func requestDidFinish(at url: URL) {
+            monitor.requestDidFinish(at: url)
+        }
+
+        func formSubmissionDidFinish(at url: URL) {
+            monitor.formSubmissionDidFinish(at: url)
         }
     }
 }

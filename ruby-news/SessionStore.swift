@@ -8,7 +8,9 @@ import Observation
 
 @MainActor
 @Observable
-final class SessionStore {
+final class SessionStore: NSObject {
+    static let didExternalSignOutNotification = Notification.Name("SessionStore.didExternalSignOut")
+
     private let fetchAccount: () async throws -> APIClient.AccountResult
     private let loginAction: (String, String) async throws -> APIClient.LoginResult
     private let logoutAction: () async throws -> Void
@@ -70,6 +72,13 @@ final class SessionStore {
         self.clearWebSession = clearWebSession
         self.notifyWebSessionChange = notifyWebSessionChange
         self.tokenStore = tokenStore
+        super.init()
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleExternalSignOutNotification),
+            name: Self.didExternalSignOutNotification,
+            object: nil
+        )
     }
 
     convenience init(fetchCurrentUser: @escaping () async throws -> CurrentUser,
@@ -91,6 +100,26 @@ final class SessionStore {
             notifyWebSessionChange: notifyWebSessionChange,
             tokenStore: tokenStore
         )
+    }
+
+    @objc private func handleExternalSignOutNotification() {
+        clear()
+    }
+
+    static func handleExternalLogout(
+        tokenStore: TokenStore = KeychainTokenStore(),
+        webSessionBridge: WebSessionBridge = WebSessionBridge(),
+        clearWebSession: (() async -> Void)? = nil
+    ) async {
+        if let clearWebSession {
+            await clearWebSession()
+        } else {
+            await webSessionBridge.clearCookies()
+        }
+
+        webSessionBridge.notifyWebSessionChange()
+        try? tokenStore.delete()
+        NotificationCenter.default.post(name: didExternalSignOutNotification, object: nil)
     }
 
     func refresh() async {

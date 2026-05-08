@@ -890,6 +890,44 @@ struct ruby_newsTests {
         #expect(sessionStore.authSession == nil)
     }
 
+    @MainActor
+    @Test func sessionStoreClearsStateWhenExternalSignOutIsHandled() async throws {
+        let tokenStore = InMemoryTokenStore()
+        let existingAuth = AuthSession(accessToken: "jwt-token", refreshToken: "refresh", expiresAt: Date().addingTimeInterval(900))
+        let sessionStore = SessionStore(
+            fetchAccount: { throw APIError.unauthorized },
+            loginAction: { _, _ in throw APIError.unauthorized },
+            tokenStore: tokenStore
+        )
+        sessionStore.currentUser = CurrentUser(id: 1, email: "jeff@example.com", name: "Jeff", username: "jeff", avatarURL: nil)
+        sessionStore.authSession = existingAuth
+        try tokenStore.save(existingAuth)
+
+        var didClearWebSession = false
+        var didNotifyWebSessionChange = false
+        await SessionStore.handleExternalLogout(
+            tokenStore: tokenStore,
+            webSessionBridge: WebSessionBridge(
+                loadCookies: { _ in [] },
+                clearPersistedCookies: {},
+                postChangeNotification: {
+                    didNotifyWebSessionChange = true
+                }
+            ),
+            clearWebSession: {
+                didClearWebSession = true
+            }
+        )
+
+        await Task.yield()
+
+        #expect(didClearWebSession)
+        #expect(didNotifyWebSessionChange)
+        #expect(sessionStore.currentUser == nil)
+        #expect(sessionStore.authSession == nil)
+        #expect(try tokenStore.load() == nil)
+    }
+
     // MARK: - APIClient.login
 
     @MainActor
@@ -1004,6 +1042,7 @@ struct ruby_newsTests {
         let baseURL = try #require(URL(string: "http://localhost:3000"))
         let sessionCookie = try makeCookie(name: "_al_news_session", value: "cookie-value", domain: "localhost")
         var copiedCookies: [HTTPCookie] = []
+        var persistedCookies: [PersistedWebSessionCookie] = []
 
         let bridge = WebSessionBridge(
             baseURL: baseURL,
@@ -1013,19 +1052,110 @@ struct ruby_newsTests {
             },
             setCookie: { cookie in
                 copiedCookies.append(cookie)
+            },
+            savePersistedCookies: { cookies in
+                persistedCookies = cookies
             }
         )
 
         await bridge.syncSharedCookiesToWebView()
 
         #expect(copiedCookies.map(\.name) == ["_al_news_session"])
+        #expect(persistedCookies.map(\.name) == ["_al_news_session"])
+        #expect(persistedCookies.map(\.value) == ["cookie-value"])
     }
 
-    @Test func webSessionBridgeClearsSharedAndWebViewCookies() async throws {
+    @Test func webSessionBridgeRestoresPersistedCookiesIntoSharedStorage() async throws {
+        let baseURL = try #require(URL(string: "http://localhost:3000"))
+        let persistedCookie = PersistedWebSessionCookie(
+            name: "_al_news_session",
+            value: "cookie-value",
+            domain: "localhost",
+            path: "/",
+            isSecure: false,
+            expiresDate: nil
+        )
+        var restoredCookies: [HTTPCookie] = []
+
+        let bridge = WebSessionBridge(
+            baseURL: baseURL,
+            loadCookies: { _ in [] },
+            storeSharedCookie: { cookie, url in
+                #expect(url == baseURL)
+                restoredCookies.append(cookie)
+            },
+            loadPersistedCookies: { [persistedCookie] }
+        )
+
+        bridge.restorePersistedCookiesToSharedStorage()
+
+        #expect(restoredCookies.map(\.name) == ["_al_news_session"])
+        #expect(restoredCookies.map(\.value) == ["cookie-value"])
+    }
+
+    @Test func webAuthEventMonitorTriggersExternalLogoutWhenProtectedWebSessionIsGone() async throws {
+        let logoutCount = LockedBox(0)
+        let monitor = WebAuthEventMonitor(
+            hasNativeAuthSession: { true },
+            isProtectedURL: { _ in true },
+            webSessionIsAuthenticated: { false },
+            handleExternalLogout: {
+                logoutCount.value += 1
+            }
+        )
+
+        monitor.requestDidFinish(at: try #require(URL(string: "https://ruby-news.kr/feed")))
+        await Task.yield()
+
+        #expect(logoutCount.value == 1)
+    }
+
+    @Test func webAuthEventMonitorSkipsSessionCheckWithoutNativeAuth() async throws {
+        let logoutCount = LockedBox(0)
+        let monitor = WebAuthEventMonitor(
+            hasNativeAuthSession: { false },
+            isProtectedURL: { _ in true },
+            webSessionIsAuthenticated: {
+                Issue.record("Should not check web session without native auth")
+                return false
+            },
+            handleExternalLogout: {
+                logoutCount.value += 1
+            }
+        )
+
+        monitor.requestDidFinish(at: try #require(URL(string: "https://ruby-news.kr/feed")))
+        await Task.yield()
+
+        #expect(logoutCount.value == 0)
+    }
+
+    @Test func webAuthEventMonitorSkipsPublicURLs() async throws {
+        let logoutCount = LockedBox(0)
+        let monitor = WebAuthEventMonitor(
+            hasNativeAuthSession: { true },
+            isProtectedURL: { _ in false },
+            webSessionIsAuthenticated: {
+                Issue.record("Should not check public URLs")
+                return false
+            },
+            handleExternalLogout: {
+                logoutCount.value += 1
+            }
+        )
+
+        monitor.requestDidFinish(at: try #require(URL(string: "https://ruby-news.kr/@jeff")))
+        await Task.yield()
+
+        #expect(logoutCount.value == 0)
+    }
+
+    @Test func webSessionBridgeClearsSharedWebAndPersistedCookies() async throws {
         let baseURL = try #require(URL(string: "http://localhost:3000"))
         let sessionCookie = try makeCookie(name: "_al_news_session", value: "cookie-value", domain: "localhost")
         var deletedWebCookies: [HTTPCookie] = []
         var deletedSharedCookies: [HTTPCookie] = []
+        var didClearPersistedCookies = false
 
         let bridge = WebSessionBridge(
             baseURL: baseURL,
@@ -1035,6 +1165,9 @@ struct ruby_newsTests {
             },
             deleteCookie: { cookie in
                 deletedWebCookies.append(cookie)
+            },
+            clearPersistedCookies: {
+                didClearPersistedCookies = true
             }
         )
 
@@ -1042,6 +1175,7 @@ struct ruby_newsTests {
 
         #expect(deletedSharedCookies.map(\.name) == ["_al_news_session"])
         #expect(deletedWebCookies.map(\.name) == ["_al_news_session"])
+        #expect(didClearPersistedCookies)
     }
 
     @Test func apiClientLikeRefreshesTokenAndRetriesAfterUnauthorized() async throws {
