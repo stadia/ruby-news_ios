@@ -39,7 +39,7 @@ struct Pagination: Decodable, Equatable {
     }
 }
 
-struct NewsArticle: Decodable, Identifiable, Equatable {
+struct NewsArticle: Decodable, Identifiable, Equatable, Hashable {
     let slug: String
     let title: String
     let titleKo: String?

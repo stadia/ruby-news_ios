@@ -83,18 +83,9 @@ struct NewsView: View {
             .onAppear {
                 Task { await viewModel.load() }
             }
-            .sheet(item: $selectedArticle) { article in
-                NavigationStack {
-                    HotwireScreen(route: .article(id: article.id))
-                        .ignoresSafeArea(edges: .bottom)
-                        .toolbar {
-                            ToolbarItem(placement: .cancellationAction) {
-                                Button("닫기") {
-                                    selectedArticle = nil
-                                }
-                            }
-                        }
-                }
+            .navigationDestination(item: $selectedArticle) { article in
+                HotwireScreen(route: .article(id: article.id))
+                    .ignoresSafeArea(edges: .bottom)
             }
         }
     }
