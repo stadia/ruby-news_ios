@@ -3,6 +3,7 @@
 //  ruby-news
 //
 
+import SDWebImageSwiftUI
 import SwiftUI
 
 struct ProfileView: View {
@@ -32,7 +33,7 @@ struct ProfileView: View {
     private var signedInView: some View {
         VStack(spacing: 16) {
             if let avatarURL = sessionStore.currentUser?.avatarURL {
-                CachedAsyncImage(url: avatarURL) { image in
+                WebImage(url: avatarURL) { image in
                     image
                         .resizable()
                         .scaledToFill()

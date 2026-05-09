@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		E469719A2FAB900000776988 /* HotwireNative in Frameworks */ = {isa = PBXBuildFile; productRef = E469719B2FAB900000776988 /* HotwireNative */; };
+		E469719D2FAB900000776988 /* SDWebImageSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = E469719E2FAB900000776988 /* SDWebImageSwiftUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +58,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E469719A2FAB900000776988 /* HotwireNative in Frameworks */,
+				E469719D2FAB900000776988 /* SDWebImageSwiftUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -118,6 +120,7 @@
 			name = "ruby-news";
 			packageProductDependencies = (
 				E469719B2FAB900000776988 /* HotwireNative */,
+				E469719E2FAB900000776988 /* SDWebImageSwiftUI */,
 			);
 			productName = "ruby-news";
 			productReference = E469716A2FAB7EE200776988 /* ruby-news.app */;
@@ -203,6 +206,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				E469719C2FAB900000776988 /* XCRemoteSwiftPackageReference "hotwire-native-ios" */,
+				E469719F2FAB900000776988 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E469716B2FAB7EE200776988 /* Products */;
@@ -597,6 +601,14 @@
 				minimumVersion = 1.2.2;
 			};
 		};
+		E469719F2FAB900000776988 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SDWebImage/SDWebImageSwiftUI";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -604,6 +616,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = E469719C2FAB900000776988 /* XCRemoteSwiftPackageReference "hotwire-native-ios" */;
 			productName = HotwireNative;
+		};
+		E469719E2FAB900000776988 /* SDWebImageSwiftUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E469719F2FAB900000776988 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */;
+			productName = SDWebImageSwiftUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
