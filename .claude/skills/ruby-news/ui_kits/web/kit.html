@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ruby-News · Web UI Kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../../colors_and_type.css">
+<link rel="stylesheet" href="kit.css">
+<style>
+    .kit-section-header {
+        max-width: var(--container-max);
+        margin: 0 auto;
+        padding: var(--space-2xl) var(--space-xl) var(--space-md);
+    }
+    .kit-section-header__eyebrow {
+        font-family: var(--font-mono);
+        font-size: var(--text-xs);
+        color: var(--brand-text);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin: 0 0 var(--space-xs);
+    }
+    .kit-section-header h2 {
+        margin: 0 0 var(--space-xs);
+        color: var(--text-content);
+        font-size: var(--text-3xl);
+        font-weight: var(--font-bold);
+    }
+    .kit-section-header p {
+        margin: 0;
+        color: var(--text-content-muted);
+        max-width: 60ch;
+    }
+
+    .kit-page-container {
+        max-width: var(--container-max);
+        margin: 0 auto;
+        padding: 0 var(--space-xl) var(--space-2xl);
+    }
+
+    /* Article-list demo */
+    .articles-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: var(--space-md);
+    }
+
+    /* Article-detail demo */
+    .article-detail-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 280px;
+        gap: var(--space-lg);
+    }
+    @media (max-width: 1023px) { .article-detail-grid { grid-template-columns: 1fr; } }
+
+    /* Login demo */
+    .login-shell {
+        max-width: 440px; margin: var(--space-2xl) auto;
+    }
+
+    /* Decorative section divider */
+    .kit-divider {
+        max-width: var(--container-max);
+        margin: 0 auto;
+        padding: 0 var(--space-xl);
+    }
+    .kit-divider hr {
+        border: 0;
+        border-top: 1px solid var(--border-subtle);
+    }
+
+    /* Page-mode chooser tabs */
+    .kit-tabs {
+        position: sticky; top: 0; z-index: 50;
+        background: var(--bg-app);
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    .kit-tabs__inner {
+        max-width: var(--container-max);
+        margin: 0 auto;
+        padding: var(--space-sm) var(--space-xl);
+        display: flex; gap: var(--space-xs); flex-wrap: wrap;
+        align-items: center;
+    }
+    .kit-tabs__title {
+        font-family: var(--font-mono);
+        font-size: var(--text-xs);
+        color: var(--text-content-muted);
+        margin-right: var(--space-sm);
+    }
+    .kit-tab {
+        appearance: none; background: transparent; border: 0;
+        font-family: inherit; font-size: var(--text-sm); cursor: pointer;
+        color: var(--text-content-secondary);
+        padding: 6px 12px; border-radius: var(--radius-md);
+    }
+    .kit-tab:hover { background: var(--bg-surface-muted); color: var(--text-content); }
+    .kit-tab[aria-selected="true"] {
+        background: var(--brand-solid); color: var(--brand-foreground);
+    }
+
+    /* Article body prose */
+    .article-prose { padding: 0 var(--space-lg) var(--space-lg); color: var(--text-content-secondary); }
+    .article-prose h2 {
+        font-size: var(--text-2xl); color: var(--text-content);
+        font-weight: var(--font-bold);
+        margin: var(--space-lg) 0 var(--space-sm);
+    }
+    .article-prose p { line-height: var(--leading-relaxed); margin: 0 0 var(--space-md); }
+    .article-prose .article-prose__lede { color: var(--text-content); font-size: var(--text-base); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="Icon.jsx"></script>
+<script type="text/babel" src="Primitives.jsx"></script>
+<script type="text/babel" src="Components.jsx"></script>
+<script src="mock.js"></script>
+
+<script type="text/babel" data-presets="env,react">
+function ArticleListPage() {
+    return (
+        <Layout active="home">
+            <div className="kit-page-container">
+                <div style={{ marginBottom: "var(--space-lg)" }}>
+                    <Heading level={1} className="rn-h1" style={{ marginBottom: "var(--space-xs)" }}>
+                        오늘의 Ruby · Rails 뉴스
+                    </Heading>
+                    <p style={{ color: "var(--text-content-muted)", margin: 0 }}>
+                        최신 Ruby, Rails 관련 뉴스와 트렌드를 한곳에서 만나보세요
+                    </p>
+                </div>
+                <div className="articles-grid">
+                    {window.MOCK_ARTICLES.map((a) => (
+                        <ArticleCard key={a.id} article={a} liked={a.id === 3}/>
+                    ))}
+                </div>
+                <div style={{ display: "flex", justifyContent: "center", gap: "var(--space-xs)", marginTop: "var(--space-2xl)" }}>
+                    <Button variant="ghost" size="md" disabled>← 이전</Button>
+                    <Button variant="primary" size="md">1</Button>
+                    <Button variant="ghost" size="md">2</Button>
+                    <Button variant="ghost" size="md">3</Button>
+                    <Button variant="ghost" size="md">다음 →</Button>
+                </div>
+            </div>
+        </Layout>
+    );
+}
+
+function ArticleDetailPage() {
+    const a = window.MOCK_ARTICLES[0];
+    return (
+        <Layout active="home" signedIn>
+            <div className="kit-page-container">
+                <div className="article-detail-grid">
+                    <article>
+                        <Card style={{ padding: 0, overflow: "hidden", borderRadius: "var(--radius-xl)" }}>
+                            <ArticleHeader article={a}/>
+                            <div style={{ padding: "0 var(--space-lg) var(--space-lg)" }}>
+                                <SummaryPanel items={a.summaryKey}/>
+                            </div>
+                            <div className="article-prose">
+                                <ProseCapsule kind="info" title="도입">
+                                    Hotwire Native는 기존의 Hotwire 스택(Turbo + Stimulus)을 모바일 환경에 자연스럽게 확장합니다.
+                                    웹뷰를 단순한 백업 수단으로 보지 않고, 네이티브 셸과의 협업 파트너로 끌어올린 점이 핵심입니다.
+                                </ProseCapsule>
+
+                                <h2>경로 구성으로 화면 전환을 표현하기</h2>
+                                <p>iOS와 Android 모두 path configuration JSON을 통해 어떤 URL이 모달로 열릴지, 어떤 URL이 풀스크린으로 푸시될지 선언합니다. Rails 앱은 자신이 모바일 셸 안에서 동작한다는 사실을 거의 인지할 필요가 없습니다.</p>
+                                <p>Stimulus 컨트롤러는 그대로 동작하고, Turbo Streams와 Frames도 그대로 흐릅니다. 즉, 단일 코드베이스에서 웹과 모바일의 인터랙션 패턴을 모두 표현할 수 있다는 의미입니다.</p>
+
+                                <h2>네이티브를 써야 할 때</h2>
+                                <p>카메라, 푸시, 결제처럼 OS-수준 권한이 필요한 흐름은 여전히 네이티브 코드로 작성합니다. 다만 Hotwire Native가 제공하는 브릿지 덕분에 Rails 컨트롤러에서 `recede`, `replace`, `refresh`와 같은 응답 헤더를 흘려보내는 것만으로도 일관된 흐름을 구성할 수 있습니다.</p>
+
+                                <ProseCapsule kind="brand" title="결론">
+                                    Hotwire Native는 “모바일 앱은 따로 설계해야 한다”는 가정을 흔드는 도구입니다.
+                                    Rails 8과의 결합 속에서, 작은 팀일수록 Hotwire Native의 가치는 빠르게 커집니다.
+                                </ProseCapsule>
+                            </div>
+                        </Card>
+
+                        <div style={{ marginTop: "var(--space-lg)", display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
+                            <Heading level={3} className="rn-h3" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                                <IconChatBubbleLeftEllipsis size={20} className="rn-text-info"/> 댓글 ({window.MOCK_COMMENTS.length})
+                            </Heading>
+                            <CommentForm signedIn/>
+                            {window.MOCK_COMMENTS.map((c, i) => (
+                                <Comment
+                                    key={i}
+                                    comment={c}
+                                    replies={i === 0 ? [window.MOCK_COMMENTS[1]] : []}
+                                />
+                            ))}
+                        </div>
+                    </article>
+                    <RecentCommentsSidebar comments={window.MOCK_RECENT_COMMENTS}/>
+                </div>
+            </div>
+        </Layout>
+    );
+}
+
+function LoginPage() {
+    return (
+        <Layout active="login">
+            <div className="login-shell">
+                <Card style={{ padding: 0, borderRadius: "var(--radius-xl)", overflow: "hidden" }}>
+                    <CardContent>
+                        <div style={{ textAlign: "center", marginBottom: "var(--space-lg)" }}>
+                            <Heading level={1} className="rn-h2" style={{ marginBottom: 4 }}>로그인</Heading>
+                            <p style={{ color: "var(--text-content-muted)", margin: 0 }}>
+                                Ruby-News 계정으로 로그인하세요
+                            </p>
+                        </div>
+                        <FormField label="이메일" htmlFor="email">
+                            <Input id="email" type="email" placeholder="you@example.com" autoComplete="email"/>
+                        </FormField>
+                        <FormField label="비밀번호" htmlFor="password">
+                            <Input id="password" type="password" placeholder="••••••••" autoComplete="current-password"/>
+                        </FormField>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--space-md)" }}>
+                            <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: "var(--text-sm)", color: "var(--text-content-secondary)" }}>
+                                <input type="checkbox"/> 로그인 상태 유지
+                            </label>
+                            <a href="#" style={{ fontSize: "var(--text-sm)" }}>비밀번호 찾기</a>
+                        </div>
+                        <Button variant="primary" size="lg" style={{ width: "100%" }}>로그인</Button>
+                        <div style={{ textAlign: "center", marginTop: "var(--space-md)", fontSize: "var(--text-sm)", color: "var(--text-content-muted)" }}>
+                            계정이 없으신가요? <a href="#">회원 가입</a>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        </Layout>
+    );
+}
+
+function KitShowcase() {
+    const [view, setView] = React.useState("list");
+    const tabs = [
+        { id: "list", label: "기사 목록" },
+        { id: "detail", label: "기사 상세 + 댓글" },
+        { id: "login", label: "로그인" },
+    ];
+    return (
+        <React.Fragment>
+            <div className="kit-tabs">
+                <div className="kit-tabs__inner">
+                    <span className="kit-tabs__title">UI Kit · Web</span>
+                    {tabs.map((t) => (
+                        <button
+                            key={t.id}
+                            type="button"
+                            className="kit-tab"
+                            aria-selected={view === t.id}
+                            onClick={() => setView(t.id)}>
+                            {t.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+            {view === "list" && <ArticleListPage/>}
+            {view === "detail" && <ArticleDetailPage/>}
+            {view === "login" && <LoginPage/>}
+        </React.Fragment>
+    );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<KitShowcase/>);
+</script>
+</body>
+</html>

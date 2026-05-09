@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+    html, body { margin: 0; padding: 0; }
+    body { background: var(--bg-app); padding: 14px; font-family: var(--font-primary); color: var(--text-content); }
+    .comment {
+        background: var(--bg-surface-muted);
+        border: 1px solid var(--border-muted);
+        border-radius: 8px;
+        padding: 14px;
+    }
+    .comment + .comment { margin-top: 8px; }
+    .nested { margin-left: 32px; margin-top: 8px; }
+    .header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .avatar { width: 32px; height: 32px; border-radius: 9999px; background: var(--brand-solid); color: var(--brand-foreground); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+    .author { font-size: 13px; font-weight: 500; color: var(--text-content); }
+    .ago { font-size: 11px; color: var(--text-content-muted); display: inline-flex; align-items: center; gap: 4px; }
+    .body { font-size: 13.5px; color: var(--text-content-secondary); line-height: 1.55; }
+    .actions { margin-top: 8px; }
+    .btn-ghost { background: transparent; border: 0; color: var(--text-content-muted); font: 500 12px var(--font-primary); padding: 4px 8px; border-radius: 6px; cursor: pointer; transition: color 200ms; display: inline-flex; align-items: center; gap: 4px; }
+    .btn-ghost:hover { color: var(--link-hover); }
+    svg { width: 12px; height: 12px; stroke: currentColor; stroke-width: 1.5; fill: none; }
+</style>
+</head>
+<body>
+<div class="comment">
+    <div class="header">
+        <div class="avatar">JD</div>
+        <div>
+            <div class="author">jeffdean</div>
+            <div class="ago"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg> 9분 전</div>
+        </div>
+    </div>
+    <div class="body">Hotwire Native 정말 잘 정리된 글이네요. iOS에서 path configuration 다루는 부분이 특히 좋았습니다.</div>
+    <div class="actions">
+        <button class="btn-ghost"><svg viewBox="0 0 24 24"><path d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.068.157 2.148.279 3.238.364.466.037.893.281 1.153.671L12 21l2.652-3.978c.26-.39.687-.634 1.153-.67 1.09-.086 2.17-.208 3.238-.365 1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"/></svg> 답글</button>
+    </div>
+</div>
+<div class="nested">
+    <div class="comment">
+        <div class="header">
+            <div class="avatar" style="background: var(--info-solid)">MK</div>
+            <div>
+                <div class="author">mkim</div>
+                <div class="ago"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg> 3분 전</div>
+            </div>
+        </div>
+        <div class="body">동감입니다. Stimulus 컨트롤러 공유 패턴이 인상적이었어요.</div>
+    </div>
+</div>
+</body>
+</html>

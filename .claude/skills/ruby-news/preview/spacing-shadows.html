@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+    html, body { margin: 0; padding: 0; }
+    body { background: var(--bg-app); padding: 28px 18px; font-family: var(--font-primary); box-sizing: border-box; color: var(--text-content); }
+    .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; align-items: end; }
+    .item { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .box { width: 90px; height: 60px; background: var(--bg-surface); border-radius: 12px; }
+    .lbl { font-size: 11px; color: var(--text-content); font-weight: 600; }
+    .val { font-size: 9.5px; color: var(--text-content-muted); font-family: ui-monospace, monospace; }
+</style>
+</head>
+<body>
+<div class="grid">
+    <div class="item"><div class="box" style="box-shadow: 0 1px 2px 0 oklch(0 0 0 / 0.05)"></div><div class="lbl">sm</div><div class="val">flat cards</div></div>
+    <div class="item"><div class="box" style="box-shadow: 0 4px 6px -1px oklch(0 0 0 / 0.1), 0 2px 4px -2px oklch(0 0 0 / 0.1)"></div><div class="lbl">md</div><div class="val">cards default</div></div>
+    <div class="item"><div class="box" style="box-shadow: 0 10px 15px -3px oklch(0 0 0 / 0.1), 0 4px 6px -4px oklch(0 0 0 / 0.1)"></div><div class="lbl">lg</div><div class="val">card hover</div></div>
+    <div class="item"><div class="box" style="box-shadow: 0 20px 25px -5px oklch(0 0 0 / 0.1), 0 8px 10px -6px oklch(0 0 0 / 0.1)"></div><div class="lbl">xl</div><div class="val">modals</div></div>
+    <div class="item"><div class="box" style="box-shadow: 0 25px 50px -12px oklch(0 0 0 / 0.25)"></div><div class="lbl">2xl</div><div class="val">profile card</div></div>
+</div>
+</body>
+</html>

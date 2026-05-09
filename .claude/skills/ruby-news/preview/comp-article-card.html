@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+    html, body { margin: 0; padding: 0; }
+    body { background: var(--bg-app); padding: 16px; font-family: var(--font-primary); box-sizing: border-box; color: var(--text-content); }
+    .card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-strong);
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px oklch(0 0 0 / 0.1), 0 2px 4px -2px oklch(0 0 0 / 0.1);
+        padding: 16px;
+        display: flex; flex-direction: column;
+        height: 100%;
+        box-sizing: border-box;
+    }
+    .badge { display: inline-flex; font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 6px; align-self: flex-start;
+        color: var(--info-text); background: oklch(0.546 0.215 263 / 0.1); box-shadow: inset 0 0 0 1px oklch(0.546 0.215 263 / 0.2); margin-bottom: 10px; }
+    .title { font-size: 16px; font-weight: 700; color: var(--text-content); line-height: 1.3; margin: 0 0 6px; }
+    .title-en { font-size: 13px; color: var(--text-content-secondary); margin: 0 0 10px; line-height: 1.4; word-break: break-word; }
+    .summary { color: var(--text-content-secondary); font-size: 12.5px; line-height: 1.55; margin: 0; padding: 0 0 0 16px; flex: 1; }
+    .summary li { margin-bottom: 3px; }
+    .meta { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-content-muted); border-top: 1px solid var(--border-subtle); padding-top: 10px; margin-top: 10px; gap: 10px; flex-wrap: wrap; }
+    .meta span { display: inline-flex; align-items: center; gap: 4px; }
+    svg { width: 12px; height: 12px; stroke: currentColor; stroke-width: 1.5; fill: none; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="card">
+    <span class="badge">github.com</span>
+    <h3 class="title">Hotwire Native가 모바일 앱 개발을 어떻게 단순화하는가</h3>
+    <h4 class="title-en">How Hotwire Native Simplifies Mobile App Development</h4>
+    <ul class="summary">
+        <li>Hotwire Native는 Turbo와 Stimulus를 iOS와 Android에 그대로 가져옵니다.</li>
+        <li>웹뷰 한 번에 네이티브 셸을 얹는 구조로 코드 공유율이 높습니다.</li>
+        <li>Rails 8과의 통합 사례 및 마이그레이션 패턴을 살펴봅니다.</li>
+    </ul>
+    <div class="meta">
+        <span><svg viewBox="0 0 24 24"><path d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.25a7.5 7.5 0 0 1 15 0"/></svg> news_kr</span>
+        <span><svg viewBox="0 0 24 24"><path d="M12 21a9 9 0 1 0-9-9c0 1.5.4 2.9 1 4.1L3 21l4.9-1c1.2.6 2.6 1 4.1 1Z"/></svg> 4</span>
+        <span><svg viewBox="0 0 24 24"><path d="M3 8.25V18a2.25 2.25 0 0 0 2.25 2.25h13.5A2.25 2.25 0 0 0 21 18V8.25M3 8.25V6a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 6v2.25M3 8.25h18M8 3v3M16 3v3"/></svg> 2026년 05월 06일</span>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+    html, body { margin: 0; padding: 0; }
+    body { background: var(--bg-app); padding: 16px; font-family: var(--font-primary); color: var(--text-content); }
+    .row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+    .item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .av-circle { border-radius: 9999px; background: var(--brand-solid); color: var(--brand-foreground); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; }
+    .sm { width: 24px; height: 24px; font-size: 10px; }
+    .md { width: 36px; height: 36px; font-size: 13px; }
+    .lg { width: 64px; height: 64px; font-size: 22px; box-shadow: 0 0 0 4px var(--bg-app), 0 20px 25px -5px oklch(0 0 0 / 0.25); }
+    .info-bg { background: var(--info-solid); }
+    .neutral { background: var(--bg-surface-muted); color: var(--text-content); box-shadow: inset 0 0 0 1px var(--border-strong); }
+    .lbl { font-size: 10px; color: var(--text-content-muted); font-family: ui-monospace, monospace; }
+</style>
+</head>
+<body>
+<div class="row">
+    <div class="item"><div class="av-circle sm">JD</div><div class="lbl">24px</div></div>
+    <div class="item"><div class="av-circle md">JD</div><div class="lbl">36px</div></div>
+    <div class="item"><div class="av-circle md info-bg">MK</div><div class="lbl">info bg</div></div>
+    <div class="item"><div class="av-circle md neutral">SK</div><div class="lbl">neutral</div></div>
+    <div class="item"><div class="av-circle lg">RN</div><div class="lbl">96px · profile</div></div>
+</div>
+</body>
+</html>

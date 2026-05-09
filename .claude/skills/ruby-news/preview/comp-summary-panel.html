@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+    html, body { margin: 0; padding: 0; }
+    body { background: var(--bg-app); padding: 16px; font-family: var(--font-primary); color: var(--text-content); }
+    .summary {
+        background: linear-gradient(to right, var(--brand-solid), var(--brand-solid-hover));
+        border-radius: 12px;
+        padding: 18px 20px;
+        color: var(--brand-foreground);
+    }
+    .summary h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-size: 18px; font-weight: 700; }
+    .summary svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 1.5; fill: none; }
+    .summary ol { margin: 0; padding: 0; list-style: none; }
+    .summary li { display: flex; gap: 8px; align-items: flex-start; line-height: 1.55; font-size: 13.5px; padding: 3px 0; }
+    .summary li .num { opacity: 0.6; font-variant-numeric: tabular-nums; font-weight: 600; flex-shrink: 0; min-width: 18px; }
+</style>
+</head>
+<body>
+<div class="summary">
+    <h2>
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+        핵심 요약
+    </h2>
+    <ol>
+        <li><span class="num">1.</span><span>Rails 8의 Solid Queue/Cache/Cable이 별도 인프라 없이 백엔드를 단순화합니다.</span></li>
+        <li><span class="num">2.</span><span>pgvector 기반 임베딩으로 비슷한 글을 빠르게 추천할 수 있습니다.</span></li>
+        <li><span class="num">3.</span><span>Hotwire와 Phlex 조합이 SPA-like UX를 가벼운 비용으로 제공합니다.</span></li>
+    </ol>
+</div>
+</body>
+</html>

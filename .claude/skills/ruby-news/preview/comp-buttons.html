@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+    html, body { margin: 0; padding: 0; }
+    body { background: var(--bg-app); padding: 18px; font-family: var(--font-primary); box-sizing: border-box; color: var(--text-content); }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+    .row:last-child { margin-bottom: 0; }
+    .lbl { color: var(--text-content-muted); font-size: 10px; font-family: ui-monospace, monospace; min-width: 80px; }
+    button {
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 500;
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: background-color 200ms cubic-bezier(0.4, 0, 0.2, 1), color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+        display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-primary { background: var(--brand-solid); color: var(--brand-foreground); border-color: var(--brand-solid); }
+    .btn-primary:hover { background: var(--brand-solid-hover); }
+    .btn-secondary { background: var(--bg-surface-muted); color: var(--text-content-secondary); }
+    .btn-secondary:hover { background: var(--bg-surface-hover); color: var(--text-content); }
+    .btn-info { background: var(--info-solid); color: var(--brand-foreground); }
+    .btn-info:hover { background: var(--info-solid-hover); }
+    .btn-danger { background: var(--bg-surface-muted); color: var(--text-content-secondary); }
+    .btn-danger:hover { background: var(--danger-solid); color: oklch(0.985 0 0); }
+    .btn-ghost { background: transparent; color: var(--text-content-secondary); }
+    .btn-ghost:hover { background: var(--bg-surface-muted); color: var(--text-content); }
+</style>
+</head>
+<body>
+    <div class="row">
+        <div class="lbl">Primary</div>
+        <button class="btn-primary">검색</button>
+        <button class="btn-primary">로그인</button>
+    </div>
+    <div class="row">
+        <div class="lbl">Secondary</div>
+        <button class="btn-secondary">회원 가입</button>
+        <button class="btn-secondary">취소</button>
+    </div>
+    <div class="row">
+        <div class="lbl">Info</div>
+        <button class="btn-info">댓글 등록</button>
+    </div>
+    <div class="row">
+        <div class="lbl">Danger</div>
+        <button class="btn-danger">삭제</button>
+    </div>
+    <div class="row">
+        <div class="lbl">Ghost</div>
+        <button class="btn-ghost">답글</button>
+    </div>
+</body>
+</html>

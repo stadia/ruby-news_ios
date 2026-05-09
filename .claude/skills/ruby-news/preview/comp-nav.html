@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+    html, body { margin: 0; padding: 0; }
+    body { background: var(--bg-app); padding: 0; font-family: var(--font-primary); color: var(--text-content); }
+    nav {
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border-strong);
+        border-top: 4px solid var(--brand-primary);
+    }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; }
+    .brand { font-size: 18px; font-weight: 600; color: var(--text-content); }
+    .brand .accent { color: var(--accent-text); }
+    .menu { display: flex; gap: 16px; align-items: center; font-size: 14px; }
+    .menu a { color: var(--text-content-secondary); text-decoration: none; transition: color 200ms; cursor: pointer; }
+    .menu a:hover, .menu a.active { color: var(--text-content); }
+    .menu a.active { color: var(--accent-text); }
+    .search {
+        background: var(--bg-surface-muted);
+        color: var(--text-content);
+        border: 1px solid var(--border-muted);
+        border-radius: 8px;
+        padding: 6px 12px;
+        font: 13px var(--font-primary);
+        width: 180px;
+        outline: none;
+    }
+    .search::placeholder { color: var(--text-content-muted); }
+    .login-btn { font: 500 13px var(--font-primary); background: var(--brand-solid); color: var(--brand-foreground); padding: 6px 14px; border-radius: 8px; border: 0; cursor: pointer; }
+</style>
+</head>
+<body>
+<nav>
+    <div class="nav-inner">
+        <div class="brand">Ruby-News || <span class="accent">루비 AI 뉴스</span></div>
+        <div class="menu">
+            <a class="active">홈</a>
+            <a>지난 글</a>
+            <a>그 밖의 뉴스</a>
+            <input class="search" placeholder="검색...">
+            <button class="login-btn">로그인</button>
+        </div>
+    </div>
+</nav>
+</body>
+</html>
