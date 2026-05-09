@@ -11,6 +11,7 @@ import UIKit
 
 struct HotwireScreen: UIViewControllerRepresentable {
     let route: WebRoute
+    @Environment(\.colorScheme) private var colorScheme
 
     func makeCoordinator() -> Coordinator {
         Coordinator(startURL: route.url())
@@ -22,6 +23,7 @@ struct HotwireScreen: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+        uiViewController.overrideUserInterfaceStyle = colorScheme == .dark ? .dark : .light
         context.coordinator.routeIfNeeded(to: route.url())
     }
 }
