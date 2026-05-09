@@ -32,7 +32,7 @@ struct ProfileView: View {
     private var signedInView: some View {
         VStack(spacing: 16) {
             if let avatarURL = sessionStore.currentUser?.avatarURL {
-                AsyncImage(url: avatarURL) { image in
+                CachedAsyncImage(url: avatarURL) { image in
                     image
                         .resizable()
                         .scaledToFill()
@@ -84,33 +84,7 @@ struct ProfileView: View {
     }
 
     private var signedOutView: some View {
-        VStack(spacing: 16) {
-            Text("로그인이 필요합니다")
-                .font(.headline)
-
-            Text("로그인하면 좋아요, 피드, 프로필 등의 기능을 사용할 수 있습니다.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-
-            NavigationLink {
-                NativeLoginView(sessionStore: sessionStore)
-            } label: {
-                Text("로그인")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-
-            NavigationLink {
-                HotwireScreen(route: .signup)
-                    .ignoresSafeArea(edges: .bottom)
-            } label: {
-                Text("회원 가입")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.bordered)
-        }
-        .padding()
+        SignedOutView(sessionStore: sessionStore)
     }
 }
 
