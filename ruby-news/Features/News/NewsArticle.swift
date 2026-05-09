@@ -7,6 +7,18 @@
 
 import Foundation
 
+enum NewsSource: CaseIterable, Equatable {
+    case ruby    // GET /articles - Ruby 관련 뉴스
+    case others  // GET /others  - 그밖의 뉴스
+
+    var label: String {
+        switch self {
+        case .ruby:   return "Ruby"
+        case .others: return "그밖의"
+        }
+    }
+}
+
 struct ArticlesResponse: Decodable {
     let articles: [NewsArticle]
     let pagination: Pagination?

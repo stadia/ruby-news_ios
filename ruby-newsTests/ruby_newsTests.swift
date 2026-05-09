@@ -104,7 +104,7 @@ struct ruby_newsTests {
             "nil": try articlesResponse(slugs: ["first-page-article"], nextPage: firstCursor),
             firstCursor: try articlesResponse(slugs: ["second-page-article"], nextPage: nil)
         ]
-        let viewModel = NewsViewModel(loadArticles: { cursor, searchQuery, tag in
+        let viewModel = NewsViewModel(loadArticles: { _, cursor, searchQuery, tag in
             #expect(searchQuery == nil)
             #expect(tag == nil)
             requestedCursors.append(cursor)
@@ -129,7 +129,7 @@ struct ruby_newsTests {
         let defaultResponse = try articlesResponse(slugs: ["default-article"], nextPage: nil)
         let searchFirstPage = try articlesResponse(slugs: ["rails-first-page"], nextPage: searchCursor)
         let searchSecondPage = try articlesResponse(slugs: ["rails-second-page"], nextPage: nil)
-        let viewModel = NewsViewModel(loadArticles: { cursor, searchQuery, tag in
+        let viewModel = NewsViewModel(loadArticles: { _, cursor, searchQuery, tag in
             requests.append((cursor, searchQuery, tag))
 
             if searchQuery == "rails" && cursor == nil {
@@ -167,7 +167,7 @@ struct ruby_newsTests {
         let firstPage = try articlesResponse(slugs: (0..<20).map { "article-\($0)" }, nextPage: nextPageCursor)
         let secondPage = try articlesResponse(slugs: (0..<5).map { "page2-\($0)" }, nextPage: nil)
         var callCount = 0
-        let viewModel = NewsViewModel(loadArticles: { cursor, _, _ in
+        let viewModel = NewsViewModel(loadArticles: { _, cursor, _, _ in
             callCount += 1
             return cursor == nil ? firstPage : secondPage
         })
@@ -189,7 +189,7 @@ struct ruby_newsTests {
         let nextPageCursor = "WyIyMDI2LTA1LTAzVDE5OjAzOjAwLjAwMCswOTowMCIsMTA5ODdd"
         let firstPage = try articlesResponse(slugs: (0..<20).map { "article-\($0)" }, nextPage: nextPageCursor)
         var callCount = 0
-        let viewModel = NewsViewModel(loadArticles: { _, _, _ in
+        let viewModel = NewsViewModel(loadArticles: { _, _, _, _ in
             callCount += 1
             return firstPage
         })
@@ -206,7 +206,7 @@ struct ruby_newsTests {
     @MainActor
     @Test func newsViewModelLoadMoreIfNeededSkipsWhenNoMorePages() async throws {
         let singlePage = try articlesResponse(slugs: ["only-article"], nextPage: nil)
-        let viewModel = NewsViewModel(loadArticles: { _, _, _ in singlePage })
+        let viewModel = NewsViewModel(loadArticles: { _, _, _, _ in singlePage })
 
         await viewModel.load()
         #expect(!viewModel.canLoadMore)
@@ -223,7 +223,7 @@ struct ruby_newsTests {
         let tagCursor = "WyIyMDI2LTA1LTAzVDE5OjAzOjAwLjAwMCswOTowMCIsMTA5ODdd"
         let tagFirstPage = try articlesResponse(slugs: ["tag-first-page"], nextPage: tagCursor)
         let tagSecondPage = try articlesResponse(slugs: ["tag-second-page"], nextPage: nil)
-        let viewModel = NewsViewModel(loadArticles: { cursor, searchQuery, tag in
+        let viewModel = NewsViewModel(loadArticles: { _, cursor, searchQuery, tag in
             requests.append((cursor, searchQuery, tag))
             return cursor == nil ? tagFirstPage : tagSecondPage
         })
@@ -1377,13 +1377,49 @@ struct ruby_newsTests {
         #expect(likesCount == 12)
     }
 
+    // MARK: - NewsViewModel Source
+
+    @MainActor
+    @Test func newsViewModelDefaultSourceIsRuby() async {
+        let viewModel = NewsViewModel(loadArticles: { _, _, _, _ in ArticlesResponse(articles: [], pagination: nil) })
+        #expect(viewModel.source == .ruby)
+    }
+
+    @MainActor
+    @Test func newsViewModelSelectSourceLoadsFromCorrectEndpoint() async throws {
+        var loadedSources: [NewsSource] = []
+        let viewModel = NewsViewModel(loadArticles: { source, _, _, _ in
+            loadedSources.append(source)
+            return ArticlesResponse(articles: [], pagination: nil)
+        })
+
+        await viewModel.load()
+        await viewModel.selectSource(.others)
+
+        #expect(loadedSources == [.ruby, .others])
+        #expect(viewModel.source == .others)
+    }
+
+    @MainActor
+    @Test func newsViewModelSelectSourceClearsTagAndSearch() async throws {
+        let viewModel = NewsViewModel(loadArticles: { _, _, _, _ in ArticlesResponse(articles: [], pagination: nil) })
+
+        await viewModel.selectTag("rails")
+        viewModel.searchQuery = "hotwire"
+        await viewModel.selectSource(.others)
+
+        #expect(viewModel.selectedTag == nil)
+        #expect(viewModel.searchQuery == "")
+        #expect(viewModel.source == .others)
+    }
+
     // MARK: - NewsViewModel Likes
 
     @MainActor
     @Test func newsViewModelToggleLikeUpdatesArticleOnSuccess() async throws {
         let article = try makeArticle(slug: "rails-8-1", liked: false, likersCount: 12)
         let viewModel = NewsViewModel(
-            loadArticles: { (_: String?, _: String?, _: String?) async throws -> ArticlesResponse in
+            loadArticles: { (_: NewsSource, _: String?, _: String?, _: String?) async throws -> ArticlesResponse in
                 ArticlesResponse(articles: [article], pagination: nil)
             },
             toggleLike: { (toggledArticle: NewsArticle) async throws -> LikeResponse in
@@ -1407,7 +1443,7 @@ struct ruby_newsTests {
     @Test func newsViewModelToggleLikeRollsBackAndShowsUnauthorizedError() async throws {
         let article = try makeArticle(slug: "rails-8-1", liked: false, likersCount: 12)
         let viewModel = NewsViewModel(
-            loadArticles: { (_: String?, _: String?, _: String?) async throws -> ArticlesResponse in
+            loadArticles: { (_: NewsSource, _: String?, _: String?, _: String?) async throws -> ArticlesResponse in
                 ArticlesResponse(articles: [article], pagination: nil)
             },
             toggleLike: { (_: NewsArticle) async throws -> LikeResponse in

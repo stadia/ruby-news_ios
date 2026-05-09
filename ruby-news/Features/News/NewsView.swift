@@ -28,6 +28,22 @@ struct NewsView: View {
             content
                 .navigationTitle(title)
                 .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    if !showsSearch {
+                        ToolbarItem(placement: .principal) {
+                            Picker("", selection: Binding(
+                                get: { viewModel.source },
+                                set: { source in Task { await viewModel.selectSource(source) } }
+                            )) {
+                                ForEach(NewsSource.allCases, id: \.self) { source in
+                                    Text(source.label).tag(source)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                            .fixedSize()
+                        }
+                    }
+                }
                 .onAppear {
                     if showsSearch && presentsSearchOnAppear {
                         isSearchPresented = true

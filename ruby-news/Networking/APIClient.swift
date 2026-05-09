@@ -37,6 +37,20 @@ struct APIClient {
         }
     }
 
+    func others(cursor: String? = nil) async throws -> ArticlesResponse {
+        return try await withAuthRetry {
+            let accessToken = tokenProvider?()?.accessToken
+            var queryItems: [URLQueryItem] = []
+            if let cursor {
+                queryItems.append(URLQueryItem(name: "page", value: cursor))
+            }
+            let request = APIRequest(path: "/others", queryItems: queryItems).urlRequest(relativeTo: baseURL, accessToken: accessToken)
+            let (data, response) = try await session.data(for: request)
+            try validate(response)
+            return try Self.decoder.decode(ArticlesResponse.self, from: data)
+        }
+    }
+
     func tag(keyword: String, cursor: String? = nil) async throws -> ArticlesResponse {
         return try await withAuthRetry {
             let accessToken = tokenProvider?()?.accessToken

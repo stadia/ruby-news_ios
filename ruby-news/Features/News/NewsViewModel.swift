@@ -11,7 +11,7 @@ import Observation
 @MainActor
 @Observable
 final class NewsViewModel {
-    typealias LoadArticles = (String?, String?, String?) async throws -> ArticlesResponse
+    typealias LoadArticles = (NewsSource, String?, String?, String?) async throws -> ArticlesResponse
     typealias ToggleLike = (NewsArticle) async throws -> LikeResponse
 
     private let loadArticles: LoadArticles
@@ -22,6 +22,7 @@ final class NewsViewModel {
     var pagination: Pagination?
     var searchQuery = ""
     var selectedTag: String?
+    var source: NewsSource = .ruby
     var isLoading = false
     var isLoadingMore = false
     var errorMessage: String?
@@ -40,11 +41,16 @@ final class NewsViewModel {
             try? tokenStore.save(session)
         }
 
-        self.loadArticles = { cursor, searchQuery, tag in
-            if let tag {
-                try await configuredClient.tag(keyword: tag, cursor: cursor)
-            } else {
-                try await configuredClient.articles(cursor: cursor, searchQuery: searchQuery)
+        self.loadArticles = { source, cursor, searchQuery, tag in
+            switch source {
+            case .ruby:
+                if let tag {
+                    try await configuredClient.tag(keyword: tag, cursor: cursor)
+                } else {
+                    try await configuredClient.articles(cursor: cursor, searchQuery: searchQuery)
+                }
+            case .others:
+                try await configuredClient.others(cursor: cursor)
             }
         }
         self.toggleLikeAction = { article in
@@ -76,6 +82,14 @@ final class NewsViewModel {
         await loadFirstPage()
     }
 
+    func selectSource(_ source: NewsSource) async {
+        self.source = source
+        selectedTag = nil
+        activeSearchQuery = nil
+        searchQuery = ""
+        await loadFirstPage()
+    }
+
     func selectTag(_ tag: String) async {
         selectedTag = tag
         activeSearchQuery = nil
@@ -96,7 +110,7 @@ final class NewsViewModel {
         errorMessage = nil
 
         do {
-            let response = try await loadArticles(nextCursor, activeSearchQuery, selectedTag)
+            let response = try await loadArticles(source, nextCursor, activeSearchQuery, selectedTag)
             articles.append(contentsOf: response.articles)
             pagination = response.pagination
         } catch {
@@ -145,7 +159,7 @@ final class NewsViewModel {
         errorMessage = nil
 
         do {
-            let response = try await loadArticles(nil, activeSearchQuery, selectedTag)
+            let response = try await loadArticles(source, nil, activeSearchQuery, selectedTag)
             articles = response.articles
             pagination = response.pagination
         } catch {
