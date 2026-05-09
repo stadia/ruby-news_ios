@@ -38,3 +38,6 @@ playground.xcworkspace
 
 # Swift Package Manager
 # Package.resolved
+### AI Agent
+.claude/
+.pi/
