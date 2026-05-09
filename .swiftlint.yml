@@ -1,0 +1,39 @@
+# .swiftlint.yml
+# ruby-news iOS 프로젝트 SwiftLint 설정
+
+included:
+  - ruby-news
+
+excluded:
+  - ruby-newsTests
+  - ruby-newsUITests
+
+# 비활성화: 이 프로젝트에서 의도적으로 허용하는 규칙
+disabled_rules:
+  - trailing_whitespace       # 에디터가 처리
+  - todo                      # TODO 주석 허용
+
+# 활성화: opt-in 규칙 중 유용한 것만 선택
+opt_in_rules:
+  - empty_count               # .count == 0 대신 .isEmpty
+  - force_unwrapping          # ! 강제 언래핑 경고
+  - private_outlet            # @IBOutlet private 강제 (미사용이지만 방어적 포함)
+  - sorted_imports            # import 정렬
+  - vertical_whitespace_closing_braces
+
+# 길이 제한
+line_length:
+  warning: 120
+  error: 160
+
+file_length:
+  warning: 400
+  error: 600
+
+function_body_length:
+  warning: 40
+  error: 80
+
+type_body_length:
+  warning: 200
+  error: 350

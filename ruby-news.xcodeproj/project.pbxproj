@@ -125,6 +125,9 @@
 				E469719E2FAB900000776988 /* SDWebImageSwiftUI */,
 				E46971A12FAB900000776988 /* KeychainAccess */,
 			);
+			packagePluginDependencies = (
+				E46971A42FAB900000776988 /* SwiftLintBuildToolPlugin in ruby-news */,
+			);
 			productName = "ruby-news";
 			productReference = E469716A2FAB7EE200776988 /* ruby-news.app */;
 			productType = "com.apple.product-type.application";
@@ -211,6 +214,7 @@
 				E469719C2FAB900000776988 /* XCRemoteSwiftPackageReference "hotwire-native-ios" */,
 				E469719F2FAB900000776988 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */,
 				E46971A22FAB900000776988 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
+				E46971A32FAB900000776988 /* XCRemoteSwiftPackageReference "SwiftLint" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E469716B2FAB7EE200776988 /* Products */;
@@ -621,7 +625,23 @@
 				minimumVersion = 4.0.0;
 			};
 		};
+		E46971A32FAB900000776988 /* XCRemoteSwiftPackageReference "SwiftLint" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/realm/SwiftLint";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.57.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackagePluginDependency section */
+		E46971A42FAB900000776988 /* SwiftLintBuildToolPlugin */ = {
+			isa = XCSwiftPackagePluginDependency;
+			package = E46971A32FAB900000776988 /* XCRemoteSwiftPackageReference "SwiftLint" */;
+			pluginName = SwiftLintBuildToolPlugin;
+		};
+/* End XCSwiftPackagePluginDependency section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		E469719B2FAB900000776988 /* HotwireNative */ = {

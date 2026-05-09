@@ -4,7 +4,7 @@
 //
 
 import Foundation
-import KeychainAccess
+@preconcurrency import KeychainAccess
 
 struct PersistedWebSessionCookie: Codable, Equatable {
     let name: String

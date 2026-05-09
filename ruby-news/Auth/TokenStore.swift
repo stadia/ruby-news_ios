@@ -4,7 +4,7 @@
 //
 
 import Foundation
-import KeychainAccess
+@preconcurrency import KeychainAccess
 
 nonisolated protocol TokenStore: Sendable {
     func save(_ session: AuthSession) throws
