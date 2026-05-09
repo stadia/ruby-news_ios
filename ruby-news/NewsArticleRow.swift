@@ -28,6 +28,7 @@ struct NewsArticleRow: View {
             HStack(spacing: 10) {
                 if let host = article.host {
                     Label(host, systemImage: "globe")
+                        .accessibilityLabel("출처 \(host)")
                 }
 
                 Button {
@@ -43,6 +44,7 @@ struct NewsArticleRow: View {
                 .accessibilityLabel(article.liked ? "좋아요 취소, 현재 \(article.likersCount)개" : "좋아요, 현재 \(article.likersCount)개")
 
                 Label("\(article.postsCount)", systemImage: "bubble")
+                    .accessibilityLabel("댓글 \(article.postsCount)개")
             }
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -56,6 +58,7 @@ struct NewsArticleRow: View {
                             } label: {
                                 Text("#\(tag)")
                                     .font(.caption2)
+                                    .foregroundStyle(Color.rnBrand)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 4)
                                     .background(.quaternary, in: Capsule())

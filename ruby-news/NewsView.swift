@@ -67,13 +67,23 @@ struct NewsView: View {
     @ViewBuilder
     private var mainContent: some View {
         if viewModel.isLoading && viewModel.articles.isEmpty {
-            ProgressView("뉴스를 불러오는 중입니다")
+            ProgressView("로딩 중...")
         } else if let errorMessage = viewModel.errorMessage, viewModel.articles.isEmpty {
             ContentUnavailableView {
                 Label(errorMessage, systemImage: "exclamationmark.triangle")
             } actions: {
                 Button("다시 시도") {
                     Task { await viewModel.load() }
+                }
+            }
+        } else if viewModel.articles.isEmpty {
+            if !viewModel.searchQuery.isEmpty {
+                ContentUnavailableView.search(text: viewModel.searchQuery)
+            } else {
+                ContentUnavailableView {
+                    Label("뉴스가 없습니다", systemImage: "newspaper")
+                } description: {
+                    Text("잠시 후 다시 시도해 주세요")
                 }
             }
         } else {

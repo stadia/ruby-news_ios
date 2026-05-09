@@ -12,7 +12,7 @@ struct ProfileView: View {
         NavigationStack {
             Group {
                 if sessionStore.isLoading {
-                    ProgressView("로딩 중")
+                    ProgressView("로딩 중...")
                 } else if sessionStore.isSignedIn {
                     signedInView
                 } else {
@@ -54,14 +54,14 @@ struct ProfileView: View {
                 HotwireScreen(route: .profile(username: sessionStore.currentUser?.username ?? ""))
                     .ignoresSafeArea(edges: .bottom)
             } label: {
-                Text("프로필 보기")
+                Text("프로필")
             }
 
             NavigationLink {
                 HotwireScreen(route: .account)
                     .ignoresSafeArea(edges: .bottom)
             } label: {
-                Text("계정 설정")
+                Text("설정")
             }
 
             Button {
@@ -105,7 +105,7 @@ struct ProfileView: View {
                 HotwireScreen(route: .signup)
                     .ignoresSafeArea(edges: .bottom)
             } label: {
-                Text("회원가입")
+                Text("회원 가입")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)

@@ -71,9 +71,9 @@ struct NativeLoginView: View {
             )
             dismiss()
         } catch APIError.unacceptableStatusCode(401) {
-            errorMessage = "이메일 또는 비밀번호를 확인해주세요."
+            errorMessage = "이메일 또는 비밀번호를 확인해 주세요."
         } catch {
-            errorMessage = "로그인에 실패했습니다. 다시 시도해주세요."
+            errorMessage = "로그인에 실패했습니다. 다시 시도해 주세요."
         }
     }
 }
