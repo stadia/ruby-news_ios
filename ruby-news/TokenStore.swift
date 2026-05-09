@@ -6,23 +6,23 @@
 import Foundation
 import Security
 
-protocol TokenStore: Sendable {
+nonisolated protocol TokenStore: Sendable {
     func save(_ session: AuthSession) throws
     func load() throws -> AuthSession?
     func delete() throws
 }
 
-final class KeychainTokenStore: TokenStore, Sendable {
+nonisolated final class KeychainTokenStore: TokenStore, Sendable {
     private let service: String
     private let accessGroup: String?
 
-    init(service: String = Bundle.main.bundleIdentifier ?? "kr.stadia.ruby-news",
+    nonisolated init(service: String = Bundle.main.bundleIdentifier ?? "kr.stadia.ruby-news",
          accessGroup: String? = nil) {
         self.service = service
         self.accessGroup = accessGroup
     }
 
-    func save(_ session: AuthSession) throws {
+    nonisolated func save(_ session: AuthSession) throws {
         let data = try JSONEncoder().encode(KeychainSession(from: session))
         let query = baseQuery()
         SecItemDelete(query as CFDictionary)
@@ -34,7 +34,7 @@ final class KeychainTokenStore: TokenStore, Sendable {
         }
     }
 
-    func load() throws -> AuthSession? {
+    nonisolated func load() throws -> AuthSession? {
         var query = baseQuery()
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
@@ -50,7 +50,7 @@ final class KeychainTokenStore: TokenStore, Sendable {
         return keychainSession.toAuthSession()
     }
 
-    func delete() throws {
+    nonisolated func delete() throws {
         let query = baseQuery()
         let status = SecItemDelete(query as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else {
@@ -58,7 +58,7 @@ final class KeychainTokenStore: TokenStore, Sendable {
         }
     }
 
-    private func baseQuery() -> [String: Any] {
+    nonisolated private func baseQuery() -> [String: Any] {
         var query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -73,7 +73,7 @@ final class KeychainTokenStore: TokenStore, Sendable {
 
 /// Keychain-storable representation of AuthSession
 /// Uses fixed String dates since AuthSession.expiresAt is a Date
-private struct KeychainSession: Codable {
+nonisolated private struct KeychainSession: Codable {
     let accessToken: String
     let refreshToken: String?
     let expiresAt: Date
@@ -94,18 +94,20 @@ private struct KeychainSession: Codable {
 }
 
 /// In-memory TokenStore for testing
-final class InMemoryTokenStore: TokenStore, @unchecked Sendable {
+nonisolated final class InMemoryTokenStore: TokenStore, @unchecked Sendable {
     private var _session: AuthSession?
 
-    func save(_ session: AuthSession) throws {
+    nonisolated init() {}
+
+    nonisolated func save(_ session: AuthSession) throws {
         _session = session
     }
 
-    func load() throws -> AuthSession? {
+    nonisolated func load() throws -> AuthSession? {
         _session
     }
 
-    func delete() throws {
+    nonisolated func delete() throws {
         _session = nil
     }
 }

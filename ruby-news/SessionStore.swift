@@ -25,9 +25,10 @@ final class SessionStore: NSObject {
 
     var isSignedIn: Bool { currentUser != nil }
 
-    convenience init(apiClient: APIClient = APIClient(), tokenStore: TokenStore = KeychainTokenStore()) {
-        var configuredClient = apiClient
-        let webSessionBridge = WebSessionBridge(baseURL: apiClient.baseURL)
+    convenience init(apiClient: APIClient? = nil, tokenStore: TokenStore? = nil) {
+        let tokenStore = tokenStore ?? KeychainTokenStore()
+        var configuredClient = apiClient ?? APIClient()
+        let webSessionBridge = WebSessionBridge(baseURL: configuredClient.baseURL)
 
         configuredClient.tokenProvider = {
             try? tokenStore.load()
@@ -64,7 +65,9 @@ final class SessionStore: NSObject {
          syncWebSession: @escaping () async -> Void = {},
          clearWebSession: @escaping () async -> Void = {},
          notifyWebSessionChange: @escaping () -> Void = {},
-         tokenStore: TokenStore = InMemoryTokenStore()) {
+         tokenStore: TokenStore? = nil) {
+        let tokenStore = tokenStore ?? InMemoryTokenStore()
+
         self.fetchAccount = fetchAccount
         self.loginAction = loginAction
         self.logoutAction = logoutAction
@@ -87,7 +90,7 @@ final class SessionStore: NSObject {
          syncWebSession: @escaping () async -> Void = {},
          clearWebSession: @escaping () async -> Void = {},
          notifyWebSessionChange: @escaping () -> Void = {},
-         tokenStore: TokenStore = InMemoryTokenStore()) {
+         tokenStore: TokenStore? = nil) {
         self.init(
             fetchAccount: {
                 let user = try await fetchCurrentUser()
@@ -107,10 +110,12 @@ final class SessionStore: NSObject {
     }
 
     static func handleExternalLogout(
-        tokenStore: TokenStore = KeychainTokenStore(),
-        webSessionBridge: WebSessionBridge = WebSessionBridge(),
+        tokenStore: TokenStore? = nil,
+        webSessionBridge: WebSessionBridge? = nil,
         clearWebSession: (() async -> Void)? = nil
     ) async {
+        let tokenStore = tokenStore ?? KeychainTokenStore()
+        let webSessionBridge = webSessionBridge ?? WebSessionBridge()
         if let clearWebSession {
             await clearWebSession()
         } else {

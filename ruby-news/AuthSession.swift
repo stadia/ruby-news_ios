@@ -5,7 +5,7 @@
 
 import Foundation
 
-struct AuthSession: Equatable {
+nonisolated struct AuthSession: Equatable {
     let accessToken: String
     let refreshToken: String?
     let expiresAt: Date
@@ -35,7 +35,7 @@ struct AuthSession: Equatable {
     }
 }
 
-struct RefreshTokenResponse: Decodable {
+nonisolated struct RefreshTokenResponse: Decodable {
     let accessToken: String
     let refreshToken: String
     let expiresIn: Int

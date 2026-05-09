@@ -161,7 +161,7 @@ struct APIClient {
         do {
             return try await action()
         } catch APIError.unacceptableStatusCode(401) {
-            guard let refreshed = try? await attemptRefresh() else {
+            guard (try? await attemptRefresh()) != nil else {
                 throw APIError.unauthorized
             }
             return try await action()

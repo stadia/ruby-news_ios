@@ -30,8 +30,9 @@ final class NewsViewModel {
         pagination?.nextPage != nil && !isLoading && !isLoadingMore
     }
 
-    init(apiClient: APIClient = APIClient(), tokenStore: TokenStore = KeychainTokenStore()) {
-        var configuredClient = apiClient
+    init(apiClient: APIClient? = nil, tokenStore: TokenStore? = nil) {
+        let tokenStore = tokenStore ?? KeychainTokenStore()
+        var configuredClient = apiClient ?? APIClient()
         configuredClient.tokenProvider = {
             try? tokenStore.load()
         }

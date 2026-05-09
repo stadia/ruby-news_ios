@@ -11,6 +11,7 @@ enum AppTab: String, CaseIterable, Identifiable {
     case news
     case feed
     case profile
+    case search
 
     var id: Self { self }
 
@@ -22,6 +23,8 @@ enum AppTab: String, CaseIterable, Identifiable {
             return "피드"
         case .profile:
             return "내 정보"
+        case .search:
+            return "검색"
         }
     }
 
@@ -33,6 +36,8 @@ enum AppTab: String, CaseIterable, Identifiable {
             return "person.2"
         case .profile:
             return "person.crop.circle"
+        case .search:
+            return "magnifyingglass"
         }
     }
 

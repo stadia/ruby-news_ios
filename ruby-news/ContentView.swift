@@ -12,26 +12,25 @@ struct ContentView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            ForEach(AppTab.allCases) { tab in
-                tabContent(for: tab)
-                    .tabItem {
-                        Label(tab.title, systemImage: tab.systemImage)
-                    }
-                    .tag(tab)
-                    .accessibilityIdentifier(tab.accessibilityIdentifier)
+            Tab(AppTab.news.title, systemImage: AppTab.news.systemImage, value: .news) {
+                NewsView()
+                    .accessibilityIdentifier(AppTab.news.accessibilityIdentifier)
             }
-        }
-    }
 
-    @ViewBuilder
-    private func tabContent(for tab: AppTab) -> some View {
-        switch tab {
-        case .news:
-            NewsView()
-        case .feed:
-            FeedView()
-        case .profile:
-            ProfileView()
+            Tab(AppTab.feed.title, systemImage: AppTab.feed.systemImage, value: .feed) {
+                FeedView()
+                    .accessibilityIdentifier(AppTab.feed.accessibilityIdentifier)
+            }
+
+            Tab(AppTab.profile.title, systemImage: AppTab.profile.systemImage, value: .profile) {
+                ProfileView()
+                    .accessibilityIdentifier(AppTab.profile.accessibilityIdentifier)
+            }
+
+            Tab(value: AppTab.search, role: .search) {
+                NewsView(title: AppTab.search.title, showsSearch: true, presentsSearchOnAppear: true)
+                    .accessibilityIdentifier(AppTab.search.accessibilityIdentifier)
+            }
         }
     }
 }
