@@ -16,6 +16,7 @@ struct ruby_newsApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .tint(.rnBrand)
         }
     }
 }
