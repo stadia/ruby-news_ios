@@ -4,7 +4,7 @@
 //
 
 import Foundation
-import Security
+import KeychainAccess
 
 struct PersistedWebSessionCookie: Codable, Equatable {
     let name: String
@@ -34,17 +34,10 @@ struct PersistedWebSessionCookie: Codable, Equatable {
 
     func toHTTPCookie() -> HTTPCookie? {
         var properties: [HTTPCookiePropertyKey: Any] = [
-            .name: name,
-            .value: value,
-            .domain: domain,
-            .path: path,
+            .name: name, .value: value, .domain: domain, .path: path,
             .secure: isSecure ? "TRUE" : "FALSE"
         ]
-
-        if let expiresDate {
-            properties[.expires] = expiresDate
-        }
-
+        if let expiresDate { properties[.expires] = expiresDate }
         return HTTPCookie(properties: properties)
     }
 }
@@ -56,75 +49,31 @@ protocol WebSessionCookieStore: Sendable {
 }
 
 final class KeychainWebSessionCookieStore: WebSessionCookieStore, Sendable {
-    private let service: String
-    private let accessGroup: String?
+    private let keychain: Keychain
 
-    init(service: String = Bundle.main.bundleIdentifier ?? "kr.stadia.ruby-news",
-         accessGroup: String? = nil) {
-        self.service = service
-        self.accessGroup = accessGroup
+    init(service: String = Bundle.main.bundleIdentifier ?? "kr.stadia.ruby-news") {
+        self.keychain = Keychain(service: service)
     }
 
     func save(_ cookies: [PersistedWebSessionCookie]) throws {
         let data = try JSONEncoder().encode(cookies)
-        let query = baseQuery()
-        SecItemDelete(query as CFDictionary)
-        var addQuery = query
-        addQuery[kSecValueData as String] = data
-        let status = SecItemAdd(addQuery as CFDictionary, nil)
-        guard status == errSecSuccess else {
-            throw TokenStoreError.saveFailed(status)
-        }
+        try keychain.set(data, key: "web-session-cookies")
     }
 
     func load() throws -> [PersistedWebSessionCookie] {
-        var query = baseQuery()
-        query[kSecReturnData as String] = true
-        query[kSecMatchLimit as String] = kSecMatchLimitOne
-
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        guard status == errSecSuccess else {
-            if status == errSecItemNotFound { return [] }
-            throw TokenStoreError.loadFailed(status)
-        }
-
-        guard let data = result as? Data else { return [] }
+        guard let data = try keychain.getData("web-session-cookies") else { return [] }
         return try JSONDecoder().decode([PersistedWebSessionCookie].self, from: data)
     }
 
     func delete() throws {
-        let status = SecItemDelete(baseQuery() as CFDictionary)
-        guard status == errSecSuccess || status == errSecItemNotFound else {
-            throw TokenStoreError.deleteFailed(status)
-        }
-    }
-
-    private func baseQuery() -> [String: Any] {
-        var query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: "web-session-cookies"
-        ]
-        if let accessGroup {
-            query[kSecAttrAccessGroup as String] = accessGroup
-        }
-        return query
+        try keychain.remove("web-session-cookies")
     }
 }
 
 final class InMemoryWebSessionCookieStore: WebSessionCookieStore, @unchecked Sendable {
     private var cookies: [PersistedWebSessionCookie] = []
 
-    func save(_ cookies: [PersistedWebSessionCookie]) throws {
-        self.cookies = cookies
-    }
-
-    func load() throws -> [PersistedWebSessionCookie] {
-        cookies
-    }
-
-    func delete() throws {
-        cookies = []
-    }
+    func save(_ cookies: [PersistedWebSessionCookie]) throws { self.cookies = cookies }
+    func load() throws -> [PersistedWebSessionCookie] { cookies }
+    func delete() throws { cookies = [] }
 }

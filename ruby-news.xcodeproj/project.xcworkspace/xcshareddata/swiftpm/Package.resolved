@@ -1,5 +1,5 @@
 {
-  "originHash" : "887b00cc2f708b24518054cd06084b093e49b917bd88ad5866fa6e37329b118d",
+  "originHash" : "66577706453e8ba07c40d1bffaaeaccf8416f273066cc32771c59c162a69711f",
   "pins" : [
     {
       "identity" : "hotwire-native-ios",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "595dba37c4918afd0e2d470109bc0c356d6e9afe",
         "version" : "1.2.2"
+      }
+    },
+    {
+      "identity" : "keychainaccess",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kishikawakatsumi/KeychainAccess",
+      "state" : {
+        "revision" : "84e546727d66f1adc5439debad16270d0fdd04e7",
+        "version" : "4.2.2"
       }
     },
     {
