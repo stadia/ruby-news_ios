@@ -9,17 +9,23 @@ import SwiftUI
 
 struct NewsView: View {
     @State private var viewModel = NewsViewModel()
-    @State private var selectedArticle: NewsArticle?
     @State private var isSearchPresented: Bool
 
     private let title: String
     private let showsSearch: Bool
     private let presentsSearchOnAppear: Bool
+    private let onArticleSelected: (String) -> Void
 
-    init(title: String = "뉴스", showsSearch: Bool = false, presentsSearchOnAppear: Bool = false) {
+    init(
+        title: String = "뉴스",
+        showsSearch: Bool = false,
+        presentsSearchOnAppear: Bool = false,
+        onArticleSelected: @escaping (String) -> Void = { _ in }
+    ) {
         self.title = title
         self.showsSearch = showsSearch
         self.presentsSearchOnAppear = presentsSearchOnAppear
+        self.onArticleSelected = onArticleSelected
         _isSearchPresented = State(initialValue: presentsSearchOnAppear)
     }
 
@@ -49,10 +55,6 @@ struct NewsView: View {
                         isSearchPresented = true
                     }
                     Task { await viewModel.load() }
-                }
-                .navigationDestination(item: $selectedArticle) { article in
-                    HotwireScreen(route: .article(id: article.id))
-                        .ignoresSafeArea(edges: .bottom)
                 }
         }
     }
@@ -129,7 +131,7 @@ struct NewsView: View {
                     })
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        selectedArticle = article
+                        onArticleSelected(article.id)
                     }
                     .onAppear {
                         Task { await viewModel.loadMoreIfNeeded(current: article) }

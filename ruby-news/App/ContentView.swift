@@ -9,11 +9,12 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var selectedTab: AppTab = .news
+    @State private var selectedArticle: ArticleRoute?
 
     var body: some View {
         TabView(selection: $selectedTab) {
             Tab(AppTab.news.title, systemImage: AppTab.news.systemImage, value: .news) {
-                NewsView()
+                NewsView(onArticleSelected: presentArticle)
                     .accessibilityIdentifier(AppTab.news.accessibilityIdentifier)
             }
 
@@ -28,11 +29,28 @@ struct ContentView: View {
             }
 
             Tab(value: AppTab.search, role: .search) {
-                NewsView(title: AppTab.search.title, showsSearch: true, presentsSearchOnAppear: true)
+                NewsView(
+                    title: AppTab.search.title,
+                    showsSearch: true,
+                    presentsSearchOnAppear: true,
+                    onArticleSelected: presentArticle
+                )
                     .accessibilityIdentifier(AppTab.search.accessibilityIdentifier)
             }
         }
+        .sheet(item: $selectedArticle) { route in
+            HotwireScreen(route: .article(id: route.id))
+                .ignoresSafeArea(edges: .bottom)
+        }
     }
+
+    private func presentArticle(id: String) {
+        selectedArticle = ArticleRoute(id: id)
+    }
+}
+
+private struct ArticleRoute: Identifiable {
+    let id: String
 }
 
 #Preview {
