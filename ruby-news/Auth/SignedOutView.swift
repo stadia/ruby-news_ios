@@ -6,8 +6,6 @@
 import SwiftUI
 
 struct SignedOutView: View {
-    let sessionStore: SessionStore
-
     var body: some View {
         VStack(spacing: 16) {
             Text("로그인이 필요합니다")
@@ -19,7 +17,7 @@ struct SignedOutView: View {
                 .multilineTextAlignment(.center)
 
             NavigationLink {
-                NativeLoginView(sessionStore: sessionStore)
+                NativeLoginView()
             } label: {
                 Text("로그인")
                     .frame(maxWidth: .infinity)

@@ -10,6 +10,7 @@
 		E469719A2FAB900000776988 /* HotwireNative in Frameworks */ = {isa = PBXBuildFile; productRef = E469719B2FAB900000776988 /* HotwireNative */; };
 		E469719D2FAB900000776988 /* SDWebImageSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = E469719E2FAB900000776988 /* SDWebImageSwiftUI */; };
 		E46971A02FAB900000776988 /* KeychainAccess in Frameworks */ = {isa = PBXBuildFile; productRef = E46971A12FAB900000776988 /* KeychainAccess */; };
+		E46971B22FAB900000776988 /* Mocker in Frameworks */ = {isa = PBXBuildFile; productRef = E46971B12FAB900000776988 /* Mocker */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -68,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E46971B22FAB900000776988 /* Mocker in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -125,9 +127,6 @@
 				E469719E2FAB900000776988 /* SDWebImageSwiftUI */,
 				E46971A12FAB900000776988 /* KeychainAccess */,
 			);
-			packagePluginDependencies = (
-				E46971A42FAB900000776988 /* SwiftLintBuildToolPlugin in ruby-news */,
-			);
 			productName = "ruby-news";
 			productReference = E469716A2FAB7EE200776988 /* ruby-news.app */;
 			productType = "com.apple.product-type.application";
@@ -150,6 +149,7 @@
 			);
 			name = "ruby-newsTests";
 			packageProductDependencies = (
+				E46971B12FAB900000776988 /* Mocker */,
 			);
 			productName = "ruby-newsTests";
 			productReference = E46971792FAB7EE300776988 /* ruby-newsTests.xctest */;
@@ -186,7 +186,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2640;
-				LastUpgradeCheck = 2640;
+				LastUpgradeCheck = 2650;
 				TargetAttributes = {
 					E46971692FAB7EE200776988 = {
 						CreatedOnToolsVersion = 26.4.1;
@@ -215,6 +215,7 @@
 				E469719F2FAB900000776988 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */,
 				E46971A22FAB900000776988 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 				E46971A32FAB900000776988 /* XCRemoteSwiftPackageReference "SwiftLint" */,
+				E46971B02FAB900000776988 /* XCRemoteSwiftPackageReference "Mocker" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E469716B2FAB7EE200776988 /* Products */;
@@ -349,6 +350,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -406,6 +408,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -633,15 +636,15 @@
 				minimumVersion = 0.57.0;
 			};
 		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackagePluginDependency section */
-		E46971A42FAB900000776988 /* SwiftLintBuildToolPlugin */ = {
-			isa = XCSwiftPackagePluginDependency;
-			package = E46971A32FAB900000776988 /* XCRemoteSwiftPackageReference "SwiftLint" */;
-			pluginName = SwiftLintBuildToolPlugin;
+		E46971B02FAB900000776988 /* XCRemoteSwiftPackageReference "Mocker" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/WeTransfer/Mocker";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.0.0;
+			};
 		};
-/* End XCSwiftPackagePluginDependency section */
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		E469719B2FAB900000776988 /* HotwireNative */ = {
@@ -658,6 +661,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = E46971A22FAB900000776988 /* XCRemoteSwiftPackageReference "KeychainAccess" */;
 			productName = KeychainAccess;
+		};
+		E46971B12FAB900000776988 /* Mocker */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E46971B02FAB900000776988 /* XCRemoteSwiftPackageReference "Mocker" */;
+			productName = Mocker;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

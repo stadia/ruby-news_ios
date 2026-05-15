@@ -7,26 +7,20 @@ import SDWebImageSwiftUI
 import SwiftUI
 
 struct ProfileView: View {
-    @State private var sessionStore = SessionStore()
+    @Environment(SessionStore.self) private var sessionStore
 
     var body: some View {
         NavigationStack {
             Group {
-                if sessionStore.isLoading {
+                if sessionStore.isLoading && !sessionStore.isSignedIn {
                     ProgressView("로딩 중...")
                 } else if sessionStore.isSignedIn {
                     signedInView
                 } else {
-                    signedOutView
+                    SignedOutView()
                 }
             }
             .navigationTitle("내 정보")
-        }
-        .onAppear {
-            sessionStore.restoreSession()
-            Task { @MainActor in
-                await sessionStore.refresh()
-            }
         }
     }
 
@@ -83,12 +77,9 @@ struct ProfileView: View {
         }
         .padding()
     }
-
-    private var signedOutView: some View {
-        SignedOutView(sessionStore: sessionStore)
-    }
 }
 
 #Preview {
     ProfileView()
+        .environment(SessionStore())
 }

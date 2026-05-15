@@ -1,27 +1,38 @@
 //
-//  MockURLProtocol.swift
+//  MockURLSession.swift
 //  ruby-newsTests
 //
 
 import Foundation
+import Mocker
 
-class MockURLProtocol: URLProtocol {
-    static var handler: ((URLRequest) -> (HTTPURLResponse, Data?))?
-    static var routeHandler: ((URLRequest) -> (HTTPURLResponse, Data?))?
+/// 세션별 고유 ID를 헤더로 주입해 핸들러를 격리한다.
+/// 병렬 테스트가 정적 핸들러를 덮어쓰는 문제를 막기 위한 장치다.
+private final class MockHandlerRegistry: @unchecked Sendable {
+    static let shared = MockHandlerRegistry()
+    private let lock = NSLock()
+    private var handlers: [String: (URLRequest) -> (HTTPURLResponse, Data?)] = [:]
+
+    func register(_ handler: @escaping (URLRequest) -> (HTTPURLResponse, Data?), forSessionID id: String) {
+        lock.lock(); defer { lock.unlock() }
+        handlers[id] = handler
+    }
+
+    func handler(forSessionID id: String) -> ((URLRequest) -> (HTTPURLResponse, Data?))? {
+        lock.lock(); defer { lock.unlock() }
+        return handlers[id]
+    }
+}
+
+final class MockURLProtocol: URLProtocol {
+    static let sessionIDHeader = "X-Mock-Session-ID"
 
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
     override func startLoading() {
-        // Route handler takes priority (can dispatch by URL)
-        if let routeHandler = Self.routeHandler {
-            let (response, data) = routeHandler(request)
-            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-            if let data { client?.urlProtocol(self, didLoad: data) }
-            client?.urlProtocolDidFinishLoading(self)
-            return
-        }
-        guard let handler = Self.handler else {
+        let id = request.value(forHTTPHeaderField: Self.sessionIDHeader) ?? ""
+        guard let handler = MockHandlerRegistry.shared.handler(forSessionID: id) else {
             client?.urlProtocolDidFinishLoading(self)
             return
         }
@@ -32,50 +43,23 @@ class MockURLProtocol: URLProtocol {
     }
 
     override func stopLoading() {}
-
-    static func reset() {
-        handler = nil
-        routeHandler = nil
-    }
 }
 
 extension URLSession {
+    /// 동적 응답이 필요한 테스트용. 세션마다 격리된 핸들러를 등록한다.
     static func mockSession(handler: @escaping (URLRequest) -> (HTTPURLResponse, Data?)) -> URLSession {
-        MockURLProtocol.handler = handler
+        let sessionID = UUID().uuidString
+        MockHandlerRegistry.shared.register(handler, forSessionID: sessionID)
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [MockURLProtocol.self]
+        config.httpAdditionalHeaders = [MockURLProtocol.sessionIDHeader: sessionID]
         return URLSession(configuration: config)
     }
 
-    static func mockSession(responseData: Data, statusCode: Int) -> URLSession {
-        mockSession { _ in
-            (
-                HTTPURLResponse(url: URL(string: "http://localhost:3000/mock")!, statusCode: statusCode, httpVersion: nil, headerFields: ["Content-Type": "application/json"])!,
-                responseData
-            )
-        }
-    }
-
-    /// Route-based mock that dispatches based on the request URL path.
-    /// This avoids global handler conflicts when tests run in parallel.
-    static func routingMockSession(routes: [(path: String, statusCode: Int, data: Data)]) -> URLSession {
-        MockURLProtocol.routeHandler = { request in
-            let path = request.url?.path ?? ""
-            for route in routes {
-                if path.contains(route.path) {
-                    return (
-                        HTTPURLResponse(url: request.url!, statusCode: route.statusCode, httpVersion: nil, headerFields: ["Content-Type": "application/json"])!,
-                        route.data
-                    )
-                }
-            }
-            return (
-                HTTPURLResponse(url: request.url!, statusCode: 404, httpVersion: nil, headerFields: ["Content-Type": "application/json"])!,
-                Data("not found".utf8)
-            )
-        }
+    /// 고정 응답 케이스용. Mocker 기반.
+    static func mockerSession() -> URLSession {
         let config = URLSessionConfiguration.ephemeral
-        config.protocolClasses = [MockURLProtocol.self]
+        config.protocolClasses = [MockingURLProtocol.self]
         return URLSession(configuration: config)
     }
 }

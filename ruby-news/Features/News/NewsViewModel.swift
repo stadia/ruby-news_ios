@@ -33,31 +33,25 @@ final class NewsViewModel {
 
     init(apiClient: APIClient? = nil, tokenStore: TokenStore? = nil) {
         let tokenStore = tokenStore ?? KeychainTokenStore()
-        var configuredClient = apiClient ?? APIClient()
-        configuredClient.tokenProvider = {
-            try? tokenStore.load()
-        }
-        configuredClient.onTokenRefreshed = { session in
-            try? tokenStore.save(session)
-        }
+        let client = apiClient ?? APIClient.authenticated(tokenStore: tokenStore)
 
         self.loadArticles = { source, cursor, searchQuery, tag in
             switch source {
             case .ruby:
                 if let tag {
-                    try await configuredClient.tag(keyword: tag, cursor: cursor)
+                    try await client.tag(keyword: tag, cursor: cursor)
                 } else {
-                    try await configuredClient.articles(cursor: cursor, searchQuery: searchQuery)
+                    try await client.articles(cursor: cursor, searchQuery: searchQuery)
                 }
             case .others:
-                try await configuredClient.others(cursor: cursor)
+                try await client.others(cursor: cursor)
             }
         }
         self.toggleLikeAction = { article in
             if article.liked {
-                try await configuredClient.unlike(articleSlug: article.slug)
+                try await client.unlike(articleSlug: article.slug)
             } else {
-                try await configuredClient.like(articleSlug: article.slug)
+                try await client.like(articleSlug: article.slug)
             }
         }
     }

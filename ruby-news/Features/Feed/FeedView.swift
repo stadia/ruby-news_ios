@@ -6,35 +6,26 @@
 import SwiftUI
 
 struct FeedView: View {
-    @State private var sessionStore = SessionStore()
+    @Environment(SessionStore.self) private var sessionStore
 
     var body: some View {
         Group {
-            if sessionStore.isLoading {
+            if sessionStore.isLoading && !sessionStore.isSignedIn {
                 ProgressView("로딩 중...")
             } else if sessionStore.isSignedIn {
                 HotwireScreen(route: .feed)
                     .ignoresSafeArea(edges: .bottom)
             } else {
-                signedOutView
+                NavigationStack {
+                    SignedOutView()
+                        .navigationTitle("피드")
+                }
             }
-        }
-        .onAppear {
-            sessionStore.restoreSession()
-            Task { @MainActor in
-                await sessionStore.refresh()
-            }
-        }
-    }
-
-    private var signedOutView: some View {
-        NavigationStack {
-            SignedOutView(sessionStore: sessionStore)
-                .navigationTitle("피드")
         }
     }
 }
 
 #Preview {
     FeedView()
+        .environment(SessionStore())
 }

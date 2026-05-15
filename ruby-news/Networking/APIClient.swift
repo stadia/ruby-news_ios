@@ -19,6 +19,14 @@ struct APIClient {
     var tokenProvider: (@Sendable () -> AuthSession?)?
     var onTokenRefreshed: (@Sendable (AuthSession) -> Void)?
 
+    /// `tokenStore`에서 token을 읽고 refresh 시 저장하도록 wiring된 인증 API client.
+    static func authenticated(tokenStore: TokenStore, baseURL: URL = AppEnvironment.baseURL, session: URLSession = .shared) -> APIClient {
+        var client = APIClient(baseURL: baseURL, session: session)
+        client.tokenProvider = { try? tokenStore.load() }
+        client.onTokenRefreshed = { try? tokenStore.save($0) }
+        return client
+    }
+
     func articles(cursor: String? = nil, searchQuery: String? = nil) async throws -> ArticlesResponse {
         var queryItems: [URLQueryItem] = []
         if let searchQuery, !searchQuery.isEmpty {
@@ -132,7 +140,7 @@ struct APIClient {
         guard let authSession = AuthSession(
             authorizationHeader: httpResponse.value(forHTTPHeaderField: "Authorization"),
             refreshToken: loginBody.refreshToken,
-            expiresIn: 900
+            expiresIn: loginBody.expiresIn ?? 900
         ) else {
             throw APIError.missingAccessToken
         }
@@ -202,6 +210,7 @@ enum APIError: Error, Equatable {
 struct LoginResponse: Decodable {
     let user: CurrentUser
     let refreshToken: String
+    let expiresIn: Int?
 }
 
 struct LikeResponse: Decodable, Equatable {

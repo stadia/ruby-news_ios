@@ -27,36 +27,20 @@ final class SessionStore: NSObject {
 
     convenience init(apiClient: APIClient? = nil, tokenStore: TokenStore? = nil) {
         let tokenStore = tokenStore ?? KeychainTokenStore()
-        var configuredClient = apiClient ?? APIClient()
-        let webSessionBridge = WebSessionBridge(baseURL: configuredClient.baseURL)
-
-        configuredClient.tokenProvider = {
-            try? tokenStore.load()
-        }
+        let client = apiClient ?? APIClient.authenticated(tokenStore: tokenStore)
+        let webSessionBridge = WebSessionBridge(baseURL: client.baseURL)
 
         self.init(
-            fetchAccount: { try await configuredClient.me() },
+            fetchAccount: { try await client.me() },
             loginAction: { email, password in
-                try await configuredClient.login(email: email, password: password)
+                try await client.login(email: email, password: password)
             },
-            logoutAction: {
-                try await configuredClient.logout()
-            },
-            syncWebSession: {
-                await webSessionBridge.syncSharedCookiesToWebView()
-            },
-            clearWebSession: {
-                await webSessionBridge.clearCookies()
-            },
-            notifyWebSessionChange: {
-                webSessionBridge.notifyWebSessionChange()
-            },
+            logoutAction: { try await client.logout() },
+            syncWebSession: { await webSessionBridge.syncSharedCookiesToWebView() },
+            clearWebSession: { await webSessionBridge.clearCookies() },
+            notifyWebSessionChange: { webSessionBridge.notifyWebSessionChange() },
             tokenStore: tokenStore
         )
-
-        configuredClient.onTokenRefreshed = { session in
-            try? tokenStore.save(session)
-        }
     }
 
     init(fetchAccount: @escaping () async throws -> APIClient.AccountResult,

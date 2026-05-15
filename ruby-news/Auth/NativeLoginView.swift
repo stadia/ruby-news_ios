@@ -8,7 +8,7 @@ import SwiftUI
 
 struct NativeLoginView: View {
     @Environment(\.dismiss) private var dismiss
-    @Bindable var sessionStore: SessionStore
+    @Environment(SessionStore.self) private var sessionStore
 
     @State private var email = ""
     @State private var password = ""
@@ -80,10 +80,11 @@ struct NativeLoginView: View {
 
 #Preview {
     NavigationStack {
-        NativeLoginView(sessionStore: SessionStore(
-            fetchCurrentUser: {
-                CurrentUser(id: 1, email: "jeff@example.com", name: "Jeff", username: "jeff", avatarURL: nil)
-            }
-        ))
+        NativeLoginView()
+            .environment(SessionStore(
+                fetchCurrentUser: {
+                    CurrentUser(id: 1, email: "jeff@example.com", name: "Jeff", username: "jeff", avatarURL: nil)
+                }
+            ))
     }
 }

@@ -10,6 +10,7 @@ import SwiftUI
 struct ContentView: View {
     @State private var selectedTab: AppTab = .news
     @State private var selectedArticle: ArticleRoute?
+    @State private var sessionStore = SessionStore()
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -41,6 +42,11 @@ struct ContentView: View {
         .sheet(item: $selectedArticle) { route in
             HotwireScreen(route: .article(id: route.id))
                 .ignoresSafeArea(edges: .bottom)
+        }
+        .environment(sessionStore)
+        .task {
+            sessionStore.restoreSession()
+            await sessionStore.refresh()
         }
     }
 
