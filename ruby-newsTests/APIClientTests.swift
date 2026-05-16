@@ -311,4 +311,34 @@ struct APIClientTests {
         #expect(authBox.value.accessToken == refreshedAuth.accessToken)
         #expect(authBox.value.refreshToken == refreshedAuth.refreshToken)
     }
+
+    /// v1 공통 에러 포맷(`{ "error": "parameter_missing", "parameter": ... }`)이
+    /// refresh 응답으로 와도, retry 경로가 호출자에게 `.unauthorized`를 전달해야 한다.
+    @Test func refreshFailureWithV1ParameterMissingSurfacesAsUnauthorized() async throws {
+        let staleAuth = AuthSession(accessToken: "stale", refreshToken: "stale-refresh", expiresAt: Date().addingTimeInterval(-60))
+        let articlesURL = try #require(URL(string: "http://localhost:3000/api/v1/articles"))
+        let refreshURL = try #require(URL(string: "http://localhost:3000/api/v1/auth/refresh"))
+
+        var articlesMock = Mock(url: articlesURL, contentType: .json, statusCode: 401, data: [.get: Data("{}".utf8)])
+        articlesMock.register()
+        var refreshMock = Mock(
+            url: refreshURL,
+            contentType: .json,
+            statusCode: 400,
+            data: [.post: Data(#"{"error":"parameter_missing","parameter":"refresh_token"}"#.utf8)]
+        )
+        refreshMock.register()
+        defer { Mocker.removeAll() }
+
+        let client = APIClient(session: URLSession.mockerSession(), tokenProvider: { staleAuth })
+
+        do {
+            _ = try await client.articles()
+            Issue.record("Expected APIError.unauthorized")
+        } catch APIError.unauthorized {
+            // expected
+        } catch {
+            Issue.record("Expected APIError.unauthorized, got \(error)")
+        }
+    }
 }
