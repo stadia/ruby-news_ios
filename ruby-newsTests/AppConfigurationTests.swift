@@ -80,7 +80,7 @@ struct AppConfigurationTests {
         let cursor = "WyIyMDI2LTA1LTAzVDE5OjAzOjAwLjAwMCswOTowMCIsMTA5ODdd"
         let request = APIRequest.tag(keyword: "Ruby 뉴스", cursor: cursor).urlRequest(relativeTo: baseURL)
 
-        #expect(request.url?.absoluteString == "http://localhost:3000/tag/Ruby%20%EB%89%B4%EC%8A%A4?page=WyIyMDI2LTA1LTAzVDE5OjAzOjAwLjAwMCswOTowMCIsMTA5ODdd")
+        #expect(request.url?.absoluteString == "http://localhost:3000/api/v1/articles/tag/Ruby%20%EB%89%B4%EC%8A%A4?page=WyIyMDI2LTA1LTAzVDE5OjAzOjAwLjAwMCswOTowMCIsMTA5ODdd")
         #expect(request.value(forHTTPHeaderField: "Accept") == "application/json")
     }
 

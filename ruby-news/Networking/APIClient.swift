@@ -38,7 +38,7 @@ struct APIClient {
 
         return try await withAuthRetry {
             let accessToken = tokenProvider?()?.accessToken
-            let request = APIRequest(path: "/articles", queryItems: queryItems).urlRequest(relativeTo: baseURL, accessToken: accessToken)
+            let request = APIRequest(path: "/api/v1/articles", queryItems: queryItems).urlRequest(relativeTo: baseURL, accessToken: accessToken)
             let (data, response) = try await session.data(for: request)
             try validate(response)
             return try Self.decoder.decode(ArticlesResponse.self, from: data)
@@ -52,7 +52,7 @@ struct APIClient {
             if let cursor {
                 queryItems.append(URLQueryItem(name: "page", value: cursor))
             }
-            let request = APIRequest(path: "/others", queryItems: queryItems).urlRequest(relativeTo: baseURL, accessToken: accessToken)
+            let request = APIRequest(path: "/api/v1/articles/others", queryItems: queryItems).urlRequest(relativeTo: baseURL, accessToken: accessToken)
             let (data, response) = try await session.data(for: request)
             try validate(response)
             return try Self.decoder.decode(ArticlesResponse.self, from: data)

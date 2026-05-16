@@ -17,7 +17,7 @@ struct APIRequest {
             queryItems.append(URLQueryItem(name: "page", value: cursor))
         }
 
-        return APIRequest(path: "/tag/\(encodedPathSegment(keyword))", queryItems: queryItems)
+        return APIRequest(path: "/api/v1/articles/tag/\(encodedPathSegment(keyword))", queryItems: queryItems)
     }
 
     func urlRequest(relativeTo baseURL: URL = AppEnvironment.baseURL, accessToken: String? = nil) -> URLRequest {
