@@ -221,4 +221,81 @@ struct NewsViewModelTests {
         #expect(updatedArticle.likersCount == 12)
         #expect(viewModel.errorMessage == "로그인이 필요합니다.")
     }
+
+    @Test func newsViewModelToggleBoostUpdatesArticleOnSuccess() async throws {
+        let article = try TestHelpers.makeArticle(
+            slug: "rails-8-1",
+            liked: false,
+            likersCount: 0,
+            boosted: false,
+            boostsCount: 3
+        )
+        let viewModel = NewsViewModel(
+            loadArticles: { _, _, _, _ in ArticlesResponse(articles: [article], pagination: nil) },
+            toggleBoost: { boostedArticle in
+                #expect(boostedArticle.slug == "rails-8-1")
+                return BoostResponse(
+                    boostableType: "Article",
+                    boostableSlug: "rails-8-1",
+                    boosted: true,
+                    boostsCount: 4
+                )
+            }
+        )
+
+        await viewModel.load()
+        let current = try #require(viewModel.articles.first)
+        await viewModel.toggleBoost(current)
+
+        let updatedArticle = try #require(viewModel.articles.first)
+        #expect(updatedArticle.boosted)
+        #expect(updatedArticle.boostsCount == 4)
+        #expect(viewModel.errorMessage == nil)
+    }
+
+    @Test func newsViewModelToggleBoostRollsBackAndShowsUnauthorizedError() async throws {
+        let article = try TestHelpers.makeArticle(
+            slug: "rails-8-1",
+            liked: false,
+            likersCount: 0,
+            boosted: false,
+            boostsCount: 3
+        )
+        let viewModel = NewsViewModel(
+            loadArticles: { _, _, _, _ in ArticlesResponse(articles: [article], pagination: nil) },
+            toggleBoost: { _ in throw APIError.unauthorized }
+        )
+
+        await viewModel.load()
+        let current = try #require(viewModel.articles.first)
+        await viewModel.toggleBoost(current)
+
+        let updatedArticle = try #require(viewModel.articles.first)
+        #expect(!updatedArticle.boosted)
+        #expect(updatedArticle.boostsCount == 3)
+        #expect(viewModel.errorMessage == "로그인이 필요합니다.")
+    }
+
+    @Test func newsViewModelToggleBoostRollsBackAndShowsFailureError() async throws {
+        let article = try TestHelpers.makeArticle(
+            slug: "rails-8-1",
+            liked: false,
+            likersCount: 0,
+            boosted: true,
+            boostsCount: 4
+        )
+        let viewModel = NewsViewModel(
+            loadArticles: { _, _, _, _ in ArticlesResponse(articles: [article], pagination: nil) },
+            toggleBoost: { _ in throw APIError.unacceptableStatusCode(500) }
+        )
+
+        await viewModel.load()
+        let current = try #require(viewModel.articles.first)
+        await viewModel.toggleBoost(current)
+
+        let updatedArticle = try #require(viewModel.articles.first)
+        #expect(updatedArticle.boosted)
+        #expect(updatedArticle.boostsCount == 4)
+        #expect(viewModel.errorMessage == "부스트 처리에 실패했습니다.")
+    }
 }

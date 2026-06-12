@@ -104,4 +104,17 @@ struct NewsArticleTests {
         #expect(!article.liked)
         #expect(article.likersCount == 3)
     }
+
+    @Test func newsArticleDecodesBoostState() async throws {
+        let article = try TestHelpers.makeArticle(
+            slug: "boosted-article",
+            liked: false,
+            likersCount: 0,
+            boosted: true,
+            boostsCount: 4
+        )
+
+        #expect(article.boosted)
+        #expect(article.boostsCount == 4)
+    }
 }

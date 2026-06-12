@@ -192,7 +192,7 @@ struct APIClientTests {
         }
         """
         let session = URLSession.mockSession { request in
-            #expect(request.url?.absoluteString == "http://localhost:3000/articles/rails-8-1/like")
+            #expect(request.url?.absoluteString == "http://localhost:3000/api/v1/articles/rails-8-1/like")
             #expect(request.httpMethod == "POST")
             #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer jwt-token")
             #expect(request.value(forHTTPHeaderField: "Accept") == "application/json")
@@ -232,7 +232,7 @@ struct APIClientTests {
         }
         """
         let session = URLSession.mockSession { request in
-            #expect(request.url?.absoluteString == "http://localhost:3000/articles/rails-8-1/like")
+            #expect(request.url?.absoluteString == "http://localhost:3000/api/v1/articles/rails-8-1/like")
             #expect(request.httpMethod == "DELETE")
             #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer jwt-token")
             return (
@@ -258,7 +258,7 @@ struct APIClientTests {
             let path = request.url?.path
 
             switch path {
-            case "/articles/rails-8-1/like":
+            case "/api/v1/articles/rails-8-1/like":
                 recordedAuthHeaders.append(request.value(forHTTPHeaderField: "Authorization"))
                 let statusCode = recordedAuthHeaders.count == 1 ? 401 : 201
                 let body = recordedAuthHeaders.count == 1
@@ -310,6 +310,108 @@ struct APIClientTests {
         #expect(didPersistRefreshedToken.value)
         #expect(authBox.value.accessToken == refreshedAuth.accessToken)
         #expect(authBox.value.refreshToken == refreshedAuth.refreshToken)
+    }
+
+    @Test func boostSendsBearerTokenAndDecodesResponse() async throws {
+        let auth = AuthSession(accessToken: "jwt-token", refreshToken: "refresh", expiresAt: Date().addingTimeInterval(900))
+        let responseBody = """
+        {
+          "boostable_type": "Article",
+          "boostable_slug": "rails-8-1",
+          "boosted": true,
+          "boosts_count": 4
+        }
+        """
+        let session = URLSession.mockSession { request in
+            #expect(request.url?.absoluteString == "http://localhost:3000/api/v1/articles/rails-8-1/boost")
+            #expect(request.httpMethod == "POST")
+            #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer jwt-token")
+            #expect(request.value(forHTTPHeaderField: "Accept") == "application/json")
+            #expect(request.value(forHTTPHeaderField: "Content-Type") == "application/json")
+
+            guard let body = TestHelpers.requestBodyData(from: request),
+                  let payload = try? JSONSerialization.jsonObject(with: body) as? [String: String] else {
+                Issue.record("Expected JSON boost request body")
+                return (
+                    HTTPURLResponse(url: request.url!, statusCode: 201, httpVersion: nil, headerFields: nil)!,
+                    Data(responseBody.utf8)
+                )
+            }
+            #expect(payload["boostable_type"] == "Article")
+
+            return (
+                HTTPURLResponse(url: request.url!, statusCode: 201, httpVersion: nil, headerFields: nil)!,
+                Data(responseBody.utf8)
+            )
+        }
+        let client = APIClient(session: session, tokenProvider: { auth })
+
+        let response = try await client.boost(articleSlug: "rails-8-1")
+        #expect(response.boosted)
+        #expect(response.boostsCount == 4)
+        #expect(response.boostableSlug == "rails-8-1")
+    }
+
+    @Test func unboostSendsDeleteAndDecodesResponse() async throws {
+        let auth = AuthSession(accessToken: "jwt-token", refreshToken: "refresh", expiresAt: Date().addingTimeInterval(900))
+        let responseBody = """
+        {
+          "boostable_type": "Article",
+          "boostable_slug": "rails-8-1",
+          "boosted": false,
+          "boosts_count": 3
+        }
+        """
+        let session = URLSession.mockSession { request in
+            #expect(request.url?.absoluteString == "http://localhost:3000/api/v1/articles/rails-8-1/boost")
+            #expect(request.httpMethod == "DELETE")
+            #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer jwt-token")
+            return (
+                HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+                Data(responseBody.utf8)
+            )
+        }
+        let client = APIClient(session: session, tokenProvider: { auth })
+
+        let response = try await client.unboost(articleSlug: "rails-8-1")
+        #expect(!response.boosted)
+        #expect(response.boostsCount == 3)
+    }
+
+    @Test func boostRefreshesTokenAndRetriesAfterUnauthorized() async throws {
+        let staleAuth = AuthSession(accessToken: "stale-access", refreshToken: "refresh-token", expiresAt: Date().addingTimeInterval(-60))
+        let authBox = LockedBox(staleAuth)
+        var recordedAuthHeaders: [String?] = []
+
+        let session = URLSession.mockSession { request in
+            switch request.url?.path {
+            case "/api/v1/articles/rails-8-1/boost":
+                recordedAuthHeaders.append(request.value(forHTTPHeaderField: "Authorization"))
+                let isRetry = recordedAuthHeaders.count == 2
+                let statusCode = isRetry ? 201 : 401
+                let body = isRetry
+                    ? Data("{\"boostable_type\":\"Article\",\"boostable_slug\":\"rails-8-1\",\"boosted\":true,\"boosts_count\":4}".utf8)
+                    : Data("{\"error\":\"unauthorized\"}".utf8)
+                return (HTTPURLResponse(url: request.url!, statusCode: statusCode, httpVersion: nil, headerFields: nil)!, body)
+            case "/api/v1/auth/refresh":
+                return (
+                    HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+                    Data("{\"access_token\":\"fresh-access\",\"refresh_token\":\"fresh-refresh\",\"expires_in\":900}".utf8)
+                )
+            default:
+                Issue.record("Unexpected path: \(request.url?.path ?? "nil")")
+                return (HTTPURLResponse(url: request.url!, statusCode: 404, httpVersion: nil, headerFields: nil)!, nil)
+            }
+        }
+
+        var client = APIClient(session: session, tokenProvider: { authBox.value })
+        client.onTokenRefreshed = { authBox.value = $0 }
+
+        let response = try await client.boost(articleSlug: "rails-8-1")
+
+        #expect(response.boosted)
+        #expect(recordedAuthHeaders == ["Bearer stale-access", "Bearer fresh-access"])
+        #expect(authBox.value.accessToken == "fresh-access")
     }
 
     /// v1 공통 에러 포맷(`{ "error": "parameter_missing", "parameter": ... }`)이

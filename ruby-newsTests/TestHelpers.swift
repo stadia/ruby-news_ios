@@ -37,7 +37,13 @@ enum TestHelpers {
         return try APIClient.decoder.decode(ArticlesResponse.self, from: Data(json.utf8))
     }
 
-    static func makeArticle(slug: String, liked: Bool, likersCount: Int) throws -> NewsArticle {
+    static func makeArticle(
+        slug: String,
+        liked: Bool,
+        likersCount: Int,
+        boosted: Bool = false,
+        boostsCount: Int = 0
+    ) throws -> NewsArticle {
         let json = """
         {
           "slug": "\(slug)",
@@ -46,6 +52,8 @@ enum TestHelpers {
           "host": "example.com",
           "likers_count": \(likersCount),
           "liked": \(liked),
+          "boosted": \(boosted),
+          "boosts_count": \(boostsCount),
           "posts_count": 0,
           "summary_key": [],
           "tags": []

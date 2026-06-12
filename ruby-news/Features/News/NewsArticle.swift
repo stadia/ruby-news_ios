@@ -8,8 +8,8 @@
 import Foundation
 
 enum NewsSource: CaseIterable, Equatable {
-    case ruby    // GET /articles - Ruby 관련 뉴스
-    case others  // GET /others  - 그밖의 뉴스
+    case ruby    // GET /api/v1/articles - Ruby 관련 뉴스
+    case others  // GET /api/v1/articles/others - 그밖의 뉴스
 
     var label: String {
         switch self {
@@ -60,6 +60,8 @@ struct NewsArticle: Decodable, Identifiable, Equatable, Hashable {
     let isRelated: Bool?
     var likersCount: Int
     var liked: Bool
+    var boostsCount: Int
+    var boosted: Bool
     let postsCount: Int
     let publishedAt: Date?
     let summaryKey: [String]
@@ -78,6 +80,8 @@ struct NewsArticle: Decodable, Identifiable, Equatable, Hashable {
         case isRelated
         case likersCount
         case liked
+        case boostsCount
+        case boosted
         case postsCount
         case publishedAt
         case summaryKey
@@ -94,6 +98,8 @@ struct NewsArticle: Decodable, Identifiable, Equatable, Hashable {
         isRelated = try container.decodeIfPresent(Bool.self, forKey: .isRelated) ?? false
         likersCount = try container.decodeIfPresent(Int.self, forKey: .likersCount) ?? 0
         liked = try container.decodeIfPresent(Bool.self, forKey: .liked) ?? false
+        boostsCount = try container.decodeIfPresent(Int.self, forKey: .boostsCount) ?? 0
+        boosted = try container.decodeIfPresent(Bool.self, forKey: .boosted) ?? false
         postsCount = try container.decodeIfPresent(Int.self, forKey: .postsCount) ?? 0
         summaryKey = try container.decodeIfPresent([String].self, forKey: .summaryKey) ?? []
         tags = try container.decodeIfPresent([String].self, forKey: .tags) ?? []

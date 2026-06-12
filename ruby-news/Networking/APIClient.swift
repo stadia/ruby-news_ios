@@ -124,6 +124,14 @@ struct APIClient {
         try await sendLikeRequest(articleSlug: articleSlug, method: "DELETE")
     }
 
+    func boost(articleSlug: String) async throws -> BoostResponse {
+        try await sendBoostRequest(articleSlug: articleSlug, method: "POST")
+    }
+
+    func unboost(articleSlug: String) async throws -> BoostResponse {
+        try await sendBoostRequest(articleSlug: articleSlug, method: "DELETE")
+    }
+
     func login(email: String, password: String) async throws -> LoginResult {
         var request = URLRequest(url: URL(string: "/login", relativeTo: baseURL)!)
         request.httpMethod = "POST"
@@ -151,7 +159,8 @@ struct APIClient {
     private func sendLikeRequest(articleSlug: String, method: String) async throws -> LikeResponse {
         try await withAuthRetry {
             let accessToken = tokenProvider?()?.accessToken
-            var request = APIRequest(path: "/articles/\(articleSlug)/like").urlRequest(relativeTo: baseURL, accessToken: accessToken)
+            var request = APIRequest(path: "/api/v1/articles/\(articleSlug)/like")
+                .urlRequest(relativeTo: baseURL, accessToken: accessToken)
             request.httpMethod = method
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.httpBody = try JSONEncoder().encode(["likeable_type": "Article"])
@@ -159,6 +168,21 @@ struct APIClient {
             let (data, response) = try await session.data(for: request)
             try validate(response)
             return try Self.decoder.decode(LikeResponse.self, from: data)
+        }
+    }
+
+    private func sendBoostRequest(articleSlug: String, method: String) async throws -> BoostResponse {
+        try await withAuthRetry {
+            let accessToken = tokenProvider?()?.accessToken
+            var request = APIRequest(path: "/api/v1/articles/\(articleSlug)/boost")
+                .urlRequest(relativeTo: baseURL, accessToken: accessToken)
+            request.httpMethod = method
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try JSONEncoder().encode(["boostable_type": "Article"])
+
+            let (data, response) = try await session.data(for: request)
+            try validate(response)
+            return try Self.decoder.decode(BoostResponse.self, from: data)
         }
     }
 
@@ -218,4 +242,11 @@ struct LikeResponse: Decodable, Equatable {
     let likeableSlug: String
     let liked: Bool
     let likesCount: Int
+}
+
+struct BoostResponse: Decodable, Equatable {
+    let boostableType: String
+    let boostableSlug: String
+    let boosted: Bool
+    let boostsCount: Int
 }

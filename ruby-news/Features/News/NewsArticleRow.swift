@@ -11,6 +11,7 @@ struct NewsArticleRow: View {
     let article: NewsArticle
     var onTagSelected: ((String) -> Void)?
     var onLikeTapped: (() -> Void)?
+    var onBoostTapped: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -42,6 +43,19 @@ struct NewsArticleRow: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(article.liked ? "좋아요 취소, 현재 \(article.likersCount)개" : "좋아요, 현재 \(article.likersCount)개")
+
+                Button {
+                    onBoostTapped?()
+                } label: {
+                    Label("\(article.boostsCount)", systemImage: "arrow.2.squarepath")
+                        .foregroundStyle(article.boosted ? Color.rnBrand : .secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(
+                    article.boosted
+                        ? "부스트 취소, 현재 \(article.boostsCount)개"
+                        : "부스트, 현재 \(article.boostsCount)개"
+                )
 
                 Label("\(article.postsCount)", systemImage: "bubble")
                     .accessibilityLabel("댓글 \(article.postsCount)개")

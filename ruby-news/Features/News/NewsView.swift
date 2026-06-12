@@ -128,6 +128,8 @@ struct NewsView: View {
                         Task { await viewModel.selectTag(tag) }
                     }, onLikeTapped: {
                         Task { await viewModel.toggleLike(article) }
+                    }, onBoostTapped: {
+                        Task { await viewModel.toggleBoost(article) }
                     })
                     .contentShape(Rectangle())
                     .onTapGesture {

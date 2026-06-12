@@ -13,9 +13,11 @@ import Observation
 final class NewsViewModel {
     typealias LoadArticles = (NewsSource, String?, String?, String?) async throws -> ArticlesResponse
     typealias ToggleLike = (NewsArticle) async throws -> LikeResponse
+    typealias ToggleBoost = (NewsArticle) async throws -> BoostResponse
 
     private let loadArticles: LoadArticles
     private let toggleLikeAction: ToggleLike
+    private let toggleBoostAction: ToggleBoost
     private var activeSearchQuery: String?
 
     var articles: [NewsArticle] = []
@@ -54,12 +56,21 @@ final class NewsViewModel {
                 try await client.like(articleSlug: article.slug)
             }
         }
+        self.toggleBoostAction = { article in
+            if article.boosted {
+                try await client.unboost(articleSlug: article.slug)
+            } else {
+                try await client.boost(articleSlug: article.slug)
+            }
+        }
     }
 
     init(loadArticles: @escaping LoadArticles,
-         toggleLike: @escaping ToggleLike = { _ in throw APIError.unauthorized }) {
+         toggleLike: @escaping ToggleLike = { _ in throw APIError.unauthorized },
+         toggleBoost: @escaping ToggleBoost = { _ in throw APIError.unauthorized }) {
         self.loadArticles = loadArticles
         self.toggleLikeAction = toggleLike
+        self.toggleBoostAction = toggleBoost
     }
 
     convenience init(_ loadArticles: @escaping LoadArticles) {
@@ -148,6 +159,33 @@ final class NewsViewModel {
         }
     }
 
+    func toggleBoost(_ article: NewsArticle) async {
+        guard let index = articles.firstIndex(where: { $0.id == article.id }) else { return }
+
+        errorMessage = nil
+        let originalArticle = articles[index]
+        var optimisticArticle = originalArticle
+        optimisticArticle.boosted.toggle()
+        optimisticArticle.boostsCount += optimisticArticle.boosted ? 1 : -1
+        optimisticArticle.boostsCount = max(0, optimisticArticle.boostsCount)
+        articles[index] = optimisticArticle
+
+        do {
+            let response = try await toggleBoostAction(originalArticle)
+            articles[index].boosted = response.boosted
+            articles[index].boostsCount = response.boostsCount
+        } catch APIError.unauthorized {
+            articles[index] = originalArticle
+            errorMessage = "로그인이 필요합니다."
+        } catch APIError.unacceptableStatusCode(401) {
+            articles[index] = originalArticle
+            errorMessage = "로그인이 필요합니다."
+        } catch {
+            articles[index] = originalArticle
+            errorMessage = "부스트 처리에 실패했습니다."
+        }
+    }
+
     private func loadFirstPage() async {
         isLoading = true
         errorMessage = nil
@@ -168,4 +206,3 @@ final class NewsViewModel {
         return trimmedQuery.isEmpty ? nil : trimmedQuery
     }
 }
-
