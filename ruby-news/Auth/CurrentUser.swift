@@ -8,12 +8,12 @@ import Foundation
 struct CurrentUser: Decodable, Identifiable, Equatable {
     let id: Int
     let email: String
-    let name: String
-    let username: String
+    let name: String?
+    let username: String?
     let avatarURL: URL?
 
     var profileURL: URL {
-        URL(string: "/@\(username)", relativeTo: AppEnvironment.baseURL)!
+        URL(string: "/@\(username ?? "")", relativeTo: AppEnvironment.baseURL)!
     }
 
     enum CodingKeys: String, CodingKey {
