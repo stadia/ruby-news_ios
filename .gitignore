@@ -41,3 +41,4 @@ playground.xcworkspace
 ### AI Agent
 .claude/
 .pi/
+.worktrees/
