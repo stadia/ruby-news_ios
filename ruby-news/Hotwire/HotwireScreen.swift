@@ -11,12 +11,21 @@ import UIKit
 import WebKit
 
 enum HotwireNavigationErrorPolicy {
+    /// WKWebView returns `frameLoadInterruptedByPolicyChange` (code 102)
+    /// under the legacy `WebKitErrorDomain`, not `WKErrorDomain`.
     private static let frameLoadInterruptedByPolicyChangeCode = 102
+    private static let ignoredDomains: Set<String> = [
+        WKError.errorDomain,
+        "WebKitErrorDomain",
+    ]
 
     static func shouldPresent(_ error: Error) -> Bool {
         let error = error as NSError
-        return error.domain != WKError.errorDomain
-            || error.code != frameLoadInterruptedByPolicyChangeCode
+        if ignoredDomains.contains(error.domain),
+           error.code == frameLoadInterruptedByPolicyChangeCode {
+            return false
+        }
+        return true
     }
 }
 
