@@ -8,6 +8,17 @@
 import HotwireNative
 import SwiftUI
 import UIKit
+import WebKit
+
+enum HotwireNavigationErrorPolicy {
+    private static let frameLoadInterruptedByPolicyChangeCode = 102
+
+    static func shouldPresent(_ error: Error) -> Bool {
+        let error = error as NSError
+        return error.domain != WKError.errorDomain
+            || error.code != frameLoadInterruptedByPolicyChangeCode
+    }
+}
 
 struct HotwireScreen: UIViewControllerRepresentable {
     let route: WebRoute
@@ -115,6 +126,19 @@ extension HotwireScreen {
 
         func formSubmissionDidFinish(at url: URL) {
             monitor.formSubmissionDidFinish(at: url)
+        }
+
+        func visitableDidFailRequest(
+            _ visitable: Visitable,
+            error: Error,
+            retryHandler: RetryBlock?
+        ) {
+            guard HotwireNavigationErrorPolicy.shouldPresent(error),
+                  let errorPresenter = visitable as? ErrorPresenter else {
+                return
+            }
+
+            errorPresenter.presentError(error, retryHandler: retryHandler)
         }
     }
 }
