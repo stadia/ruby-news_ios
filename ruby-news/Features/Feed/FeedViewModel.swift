@@ -11,6 +11,8 @@ final class FeedViewModel {
     private let loadFeedAction: LoadFeed
     private let toggleLikeAction: ToggleLike
     private let toggleBoostAction: ToggleBoost
+    private var latestLoadRequestID: UUID?
+    private var interactionRequestIDs: [Int: UUID] = [:]
 
     var posts: [FeedPost] = []
     var pagination: FeedPagination?
@@ -56,44 +58,61 @@ final class FeedViewModel {
     }
 
     func load() async {
+        let requestID = UUID()
+        latestLoadRequestID = requestID
+        interactionRequestIDs.removeAll()
         isLoading = true
+        isLoadingMore = false
         errorMessage = nil
 
         do {
             let response = try await loadFeedAction(nil)
+            guard latestLoadRequestID == requestID else { return }
             posts = response.posts
             pagination = response.pagination
         } catch APIError.unauthorized {
+            guard latestLoadRequestID == requestID else { return }
             errorMessage = "로그인이 필요합니다."
         } catch APIError.unacceptableStatusCode(401) {
+            guard latestLoadRequestID == requestID else { return }
             errorMessage = "로그인이 필요합니다."
         } catch {
+            guard latestLoadRequestID == requestID else { return }
             errorMessage = "피드를 불러오지 못했습니다."
         }
 
-        isLoading = false
+        if latestLoadRequestID == requestID {
+            isLoading = false
+        }
     }
 
     func loadMore() async {
         guard canLoadMore, let nextPage = pagination?.nextPage else { return }
+        let loadRequestID = latestLoadRequestID
 
         isLoadingMore = true
         errorMessage = nil
 
         do {
             let response = try await loadFeedAction(nextPage)
+            guard latestLoadRequestID == loadRequestID else { return }
             let existingIDs = Set(posts.map(\.id))
             posts.append(contentsOf: response.posts.filter { !existingIDs.contains($0.id) })
             pagination = response.pagination
         } catch APIError.unauthorized {
+            guard latestLoadRequestID == loadRequestID else { return }
             errorMessage = "로그인이 필요합니다."
         } catch APIError.unacceptableStatusCode(401) {
+            guard latestLoadRequestID == loadRequestID else { return }
             errorMessage = "로그인이 필요합니다."
         } catch {
+            guard latestLoadRequestID == loadRequestID else { return }
             errorMessage = "피드를 더 불러오지 못했습니다."
         }
 
-        isLoadingMore = false
+        if latestLoadRequestID == loadRequestID {
+            isLoadingMore = false
+        }
     }
 
     func loadMoreIfNeeded(current post: FeedPost) async {
@@ -116,20 +135,26 @@ final class FeedViewModel {
 
         errorMessage = nil
         let originalPost = posts[index]
+        let requestID = UUID()
+        interactionRequestIDs[post.id] = requestID
         posts[index].liked.toggle()
         posts[index].likesCount = max(0, posts[index].likesCount + (posts[index].liked ? 1 : -1))
 
         do {
             let response = try await toggleLikeAction(slug, originalPost.liked)
-            guard let updatedIndex = posts.firstIndex(where: { $0.id == post.id }) else { return }
+            guard interactionRequestIDs[post.id] == requestID,
+                  let updatedIndex = posts.firstIndex(where: { $0.id == post.id }) else {
+                return
+            }
             posts[updatedIndex].liked = response.liked
             posts[updatedIndex].likesCount = response.likesCount
         } catch {
-            restore(originalPost)
-            errorMessage = interactionErrorMessage(
-                error,
-                fallback: "좋아요 처리에 실패했습니다."
-            )
+            if restore(originalPost, requestID: requestID) {
+                errorMessage = interactionErrorMessage(
+                    error,
+                    fallback: "좋아요 처리에 실패했습니다."
+                )
+            }
         }
     }
 
@@ -141,26 +166,36 @@ final class FeedViewModel {
 
         errorMessage = nil
         let originalPost = posts[index]
+        let requestID = UUID()
+        interactionRequestIDs[post.id] = requestID
         posts[index].boosted.toggle()
         posts[index].boostsCount = max(0, posts[index].boostsCount + (posts[index].boosted ? 1 : -1))
 
         do {
             let response = try await toggleBoostAction(slug, originalPost.boosted)
-            guard let updatedIndex = posts.firstIndex(where: { $0.id == post.id }) else { return }
+            guard interactionRequestIDs[post.id] == requestID,
+                  let updatedIndex = posts.firstIndex(where: { $0.id == post.id }) else {
+                return
+            }
             posts[updatedIndex].boosted = response.boosted
             posts[updatedIndex].boostsCount = response.boostsCount
         } catch {
-            restore(originalPost)
-            errorMessage = interactionErrorMessage(
-                error,
-                fallback: "부스트 처리에 실패했습니다."
-            )
+            if restore(originalPost, requestID: requestID) {
+                errorMessage = interactionErrorMessage(
+                    error,
+                    fallback: "부스트 처리에 실패했습니다."
+                )
+            }
         }
     }
 
-    private func restore(_ post: FeedPost) {
-        guard let index = posts.firstIndex(where: { $0.id == post.id }) else { return }
+    private func restore(_ post: FeedPost, requestID: UUID) -> Bool {
+        guard interactionRequestIDs[post.id] == requestID,
+              let index = posts.firstIndex(where: { $0.id == post.id }) else {
+            return false
+        }
         posts[index] = post
+        return true
     }
 
     private func interactionErrorMessage(_ error: Error, fallback: String) -> String {

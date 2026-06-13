@@ -19,7 +19,7 @@ struct AuthModelTests {
             "email": "jeff@example.com",
             "name": "Jeff Dean",
             "username": "jeff",
-            "avatar_url": "https://ruby-news.kr/rails/active_storage/blobs/redirect/abc123/avatar.jpeg"
+            "avatar_url": "https://ruby-news.dev/rails/active_storage/blobs/redirect/abc123/avatar.jpeg"
           }
         }
         """
@@ -31,7 +31,7 @@ struct AuthModelTests {
         #expect(user.email == "jeff@example.com")
         #expect(user.name == "Jeff Dean")
         #expect(user.username == "jeff")
-        #expect(user.avatarURL?.absoluteString == "https://ruby-news.kr/rails/active_storage/blobs/redirect/abc123/avatar.jpeg")
+        #expect(user.avatarURL?.absoluteString == "https://ruby-news.dev/rails/active_storage/blobs/redirect/abc123/avatar.jpeg")
     }
 
     @Test func currentUserDecodesWithoutAvatar() async throws {

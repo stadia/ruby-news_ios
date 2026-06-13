@@ -201,6 +201,101 @@ struct NewsViewModelTests {
         #expect(viewModel.errorMessage == nil)
     }
 
+    @Test func olderLoadResponseDoesNotReplaceNewerSearchResults() async throws {
+        let oldResponse = try TestHelpers.articlesResponse(slugs: ["old"], nextPage: nil)
+        let newResponse = try TestHelpers.articlesResponse(slugs: ["new"], nextPage: nil)
+        var firstContinuation: CheckedContinuation<ArticlesResponse, Never>?
+        var requestCount = 0
+        let viewModel = NewsViewModel(loadArticles: { _, _, searchQuery, _ in
+            requestCount += 1
+            if requestCount == 1 {
+                return await withCheckedContinuation { continuation in
+                    firstContinuation = continuation
+                }
+            }
+            #expect(searchQuery == "rails")
+            return newResponse
+        })
+
+        let initialLoad = Task { await viewModel.load() }
+        await Task.yield()
+        viewModel.searchQuery = "rails"
+        await viewModel.search()
+        firstContinuation?.resume(returning: oldResponse)
+        await initialLoad.value
+
+        #expect(viewModel.articles.map(\.id) == ["new"])
+    }
+
+    @Test func likeResponseDoesNotMutateReplacementArticleAtOldIndex() async throws {
+        let original = try TestHelpers.makeArticle(slug: "original", liked: false, likersCount: 1)
+        let replacement = try TestHelpers.makeArticle(slug: "replacement", liked: false, likersCount: 8)
+        var loadCount = 0
+        var likeContinuation: CheckedContinuation<LikeResponse, Never>?
+        let viewModel = NewsViewModel(
+            loadArticles: { _, _, _, _ in
+                loadCount += 1
+                return ArticlesResponse(
+                    articles: loadCount == 1 ? [original] : [replacement],
+                    pagination: nil
+                )
+            },
+            toggleLike: { _ in
+                await withCheckedContinuation { continuation in
+                    likeContinuation = continuation
+                }
+            }
+        )
+
+        await viewModel.load()
+        let likeTask = Task { await viewModel.toggleLike(original) }
+        await Task.yield()
+        await viewModel.selectSource(.others)
+        likeContinuation?.resume(
+            returning: LikeResponse(
+                likeableType: "Article",
+                likeableSlug: "original",
+                liked: true,
+                likesCount: 2
+            )
+        )
+        await likeTask.value
+
+        #expect(viewModel.articles == [replacement])
+    }
+
+    @Test func staleLikeFailureDoesNotShowErrorOnReplacementResults() async throws {
+        let original = try TestHelpers.makeArticle(slug: "original", liked: false, likersCount: 1)
+        let replacement = try TestHelpers.makeArticle(slug: "replacement", liked: false, likersCount: 8)
+        var loadCount = 0
+        var likeContinuation: CheckedContinuation<Void, Never>?
+        let viewModel = NewsViewModel(
+            loadArticles: { _, _, _, _ in
+                loadCount += 1
+                return ArticlesResponse(
+                    articles: loadCount == 1 ? [original] : [replacement],
+                    pagination: nil
+                )
+            },
+            toggleLike: { _ in
+                await withCheckedContinuation { continuation in
+                    likeContinuation = continuation
+                }
+                throw APIError.unacceptableStatusCode(500)
+            }
+        )
+
+        await viewModel.load()
+        let likeTask = Task { await viewModel.toggleLike(original) }
+        await Task.yield()
+        await viewModel.selectSource(.others)
+        likeContinuation?.resume()
+        await likeTask.value
+
+        #expect(viewModel.articles == [replacement])
+        #expect(viewModel.errorMessage == nil)
+    }
+
     @Test func newsViewModelToggleLikeRollsBackAndShowsUnauthorizedError() async throws {
         let article = try TestHelpers.makeArticle(slug: "rails-8-1", liked: false, likersCount: 12)
         let viewModel = NewsViewModel(

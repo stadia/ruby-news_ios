@@ -5,21 +5,27 @@
 
 import Foundation
 
+enum WebSessionAuthenticationState {
+    case authenticated
+    case unauthenticated
+    case indeterminate
+}
+
 struct WebAuthEventMonitor {
     private let hasNativeAuthSession: () -> Bool
     private let isProtectedURL: (URL) -> Bool
-    private let webSessionIsAuthenticated: () async -> Bool
+    private let webSessionAuthenticationState: () async -> WebSessionAuthenticationState
     private let handleExternalLogout: () async -> Void
 
     init(
         hasNativeAuthSession: @escaping () -> Bool,
         isProtectedURL: @escaping (URL) -> Bool,
-        webSessionIsAuthenticated: @escaping () async -> Bool,
+        webSessionAuthenticationState: @escaping () async -> WebSessionAuthenticationState,
         handleExternalLogout: @escaping () async -> Void
     ) {
         self.hasNativeAuthSession = hasNativeAuthSession
         self.isProtectedURL = isProtectedURL
-        self.webSessionIsAuthenticated = webSessionIsAuthenticated
+        self.webSessionAuthenticationState = webSessionAuthenticationState
         self.handleExternalLogout = handleExternalLogout
     }
 
@@ -39,15 +45,25 @@ struct WebAuthEventMonitor {
                 let path = url.path
                 return path == "/feed" || path.hasPrefix("/account")
             },
-            webSessionIsAuthenticated: {
+            webSessionAuthenticationState: {
                 do {
-                    var request = URLRequest(url: URL(string: "/account/edit", relativeTo: baseURL)!)
+                    guard let accountURL = URL(string: "/account/edit", relativeTo: baseURL) else {
+                        return .indeterminate
+                    }
+                    var request = URLRequest(url: accountURL)
                     request.setValue("application/json", forHTTPHeaderField: "Accept")
                     let (_, response) = try await session.data(for: request)
-                    guard let httpResponse = response as? HTTPURLResponse else { return false }
-                    return (200..<300).contains(httpResponse.statusCode)
+                    guard let httpResponse = response as? HTTPURLResponse else { return .indeterminate }
+                    switch httpResponse.statusCode {
+                    case 200..<300:
+                        return .authenticated
+                    case 401, 403:
+                        return .unauthenticated
+                    default:
+                        return .indeterminate
+                    }
                 } catch {
-                    return false
+                    return .indeterminate
                 }
             },
             handleExternalLogout: handleExternalLogout
@@ -66,10 +82,12 @@ struct WebAuthEventMonitor {
         guard hasNativeAuthSession(), isProtectedURL(url) else { return }
 
         Task {
-            if await webSessionIsAuthenticated() {
-                return
+            switch await webSessionAuthenticationState() {
+            case .authenticated, .indeterminate:
+                break
+            case .unauthenticated:
+                await handleExternalLogout()
             }
-            await handleExternalLogout()
         }
     }
 }

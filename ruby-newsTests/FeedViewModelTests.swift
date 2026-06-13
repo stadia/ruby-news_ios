@@ -34,6 +34,39 @@ struct FeedViewModelTests {
     }
 
     @Test
+    func olderLoadResponseDoesNotReplaceNewerRefreshResults() async throws {
+        let oldPost = try TestHelpers.makeFeedPost(id: 1, slug: "old")
+        let newPost = try TestHelpers.makeFeedPost(id: 2, slug: "new")
+        var firstContinuation: CheckedContinuation<FeedResponse, Never>?
+        var requestCount = 0
+        let viewModel = FeedViewModel(loadFeed: { _ in
+            requestCount += 1
+            if requestCount == 1 {
+                return await withCheckedContinuation { continuation in
+                    firstContinuation = continuation
+                }
+            }
+            return FeedResponse(
+                posts: [newPost],
+                pagination: FeedPagination(nextPage: nil, limit: 20)
+            )
+        })
+
+        let initialLoad = Task { await viewModel.load() }
+        await Task.yield()
+        await viewModel.load()
+        firstContinuation?.resume(
+            returning: FeedResponse(
+                posts: [oldPost],
+                pagination: FeedPagination(nextPage: nil, limit: 20)
+            )
+        )
+        await initialLoad.value
+
+        #expect(viewModel.posts == [newPost])
+    }
+
+    @Test
     func loadMoreIfNeededOnlyTriggersNearEnd() async throws {
         let posts = try (0..<20).map {
             try TestHelpers.makeFeedPost(id: $0, slug: "post-\($0)")

@@ -18,6 +18,7 @@ struct APIClient {
     var session: URLSession = .shared
     var tokenProvider: (@Sendable () -> AuthSession?)?
     var onTokenRefreshed: (@Sendable (AuthSession) -> Void)?
+    private let refreshCoordinator = AuthRefreshCoordinator()
 
     /// `tokenStore`에서 token을 읽고 refresh 시 저장하도록 wiring된 인증 API client.
     static func authenticated(tokenStore: TokenStore, baseURL: URL = AppEnvironment.baseURL, session: URLSession = .shared) -> APIClient {
@@ -247,7 +248,9 @@ struct APIClient {
               let refreshToken = session.refreshToken else {
             throw APIError.unauthorized
         }
-        let newSession = try await refreshTokens(refreshToken: refreshToken)
+        let newSession = try await refreshCoordinator.refresh {
+            try await refreshTokens(refreshToken: refreshToken)
+        }
         onTokenRefreshed?(newSession)
         return newSession
     }
@@ -273,6 +276,23 @@ struct APIClient {
                 return "Post"
             }
         }
+    }
+}
+
+private actor AuthRefreshCoordinator {
+    private var task: Task<AuthSession, Error>?
+
+    func refresh(_ operation: @escaping () async throws -> AuthSession) async throws -> AuthSession {
+        if let task {
+            return try await task.value
+        }
+
+        let task = Task {
+            try await operation()
+        }
+        self.task = task
+        defer { self.task = nil }
+        return try await task.value
     }
 }
 

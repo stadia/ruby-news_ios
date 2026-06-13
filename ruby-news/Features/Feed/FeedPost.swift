@@ -40,7 +40,7 @@ struct FeedPagination: Decodable, Equatable {
     }
 }
 
-struct FeedLink: Equatable {
+struct FeedLink: Equatable, Hashable {
     let text: String
     let url: URL
 }
@@ -79,6 +79,8 @@ struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
     let boostedBy: String?
     let mediaAttachments: [MediaAttachment]
     let authorAvatarURL: URL?
+    let displayBody: String
+    let links: [FeedLink]
 
     var isInteractive: Bool {
         slug?.isEmpty == false
@@ -92,16 +94,8 @@ struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
     /// 셀 본문에서 `NSAttributedString`의 HTML 파서를 호출하면 중첩 런루프가 컬렉션 뷰의
     /// 셀 dequeue 레이아웃과 충돌해 크래시가 발생한다. 설계 스펙도 "plain post body"를 요구하므로
     /// 런루프를 돌리지 않는 순수 문자열 처리로 태그를 제거한 평문을 제공한다.
-    var displayBody: String {
-        Self.plainText(fromHTML: body)
-    }
-
     /// 본문 HTML의 `<a href="...">텍스트</a>` 앵커를 문서 순서대로 추출한다.
     /// `text`는 `displayBody`에 나타나는 평문과 동일하게 정리된다.
-    var links: [FeedLink] {
-        Self.anchorLinks(fromHTML: body)
-    }
-
     static func anchorLinks(fromHTML html: String) -> [FeedLink] {
         guard let regex = Self.anchorRegex else { return [] }
         let ns = html as NSString
@@ -205,6 +199,8 @@ struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
         id = try container.decode(Int.self, forKey: .id)
         slug = try container.decodeIfPresent(String.self, forKey: .slug)
         body = try container.decode(String.self, forKey: .body)
+        displayBody = Self.plainText(fromHTML: body)
+        links = Self.anchorLinks(fromHTML: body)
         postType = try container.decode(FeedPostType.self, forKey: .postType)
         status = try container.decodeIfPresent(String.self, forKey: .status)
         likesCount = try container.decode(Int.self, forKey: .likesCount)

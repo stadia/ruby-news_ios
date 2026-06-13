@@ -2,7 +2,7 @@
 
 ## 목적
 
-`ruby-news.kr` iOS 앱의 Native 기사 API는 `/api/v1` namespace를 사용한다. Hotwire Native 화면은 기존 Rails endpoint를 그대로 사용한다. Native 화면은 항상 다음 헤더를 보내 JSON 응답을 요청한다.
+`ruby-news.dev` iOS 앱의 Native 기사 API는 `/api/v1` namespace를 사용한다. Hotwire Native 화면은 기존 Rails endpoint를 그대로 사용한다. Native 화면은 항상 다음 헤더를 보내 JSON 응답을 요청한다.
 
 ```http
 Accept: application/json
@@ -22,6 +22,7 @@ Accept: application/json
 - 2026-05-07 수동 검증: `더 보기` 버튼으로 다음 페이지가 정상 append되는 것을 확인했다.
 - iOS 앱은 `/articles?search=...` 검색 UI를 구현했다. 서버 JSON 응답은 curl로 확인했고, 앱 UI 수동 검증도 완료했다.
 - `/api/v1/articles/others`, `/api/v1/articles/tag/:keyword`, 좋아요와 부스트 mutation 계약을 확인했다.
+- `GET /feed` JSON과 포스트 좋아요/부스트 mutation 계약을 확인했고 Native Feed에서 사용한다.
 
 ## 공통 요청사항
 
@@ -91,7 +92,7 @@ Accept: application/json
       "source_name": "Ruby on Rails Blog",
       "host": "rubyonrails.org",
       "published_at": "2026-05-06T10:00:00Z",
-      "article_url": "https://ruby-news.kr/articles/rails-8-1-released",
+      "article_url": "https://ruby-news.dev/articles/rails-8-1-released",
       "original_url": "https://rubyonrails.org/...",
       "tags": ["Rails", "Release"],
       "likes_count": 12,
@@ -260,8 +261,8 @@ Accept: application/json
     "username": "jeff",
     "name": "Jeff Dean",
     "email": "jeff@example.com",
-    "avatar_url": "https://ruby-news.kr/rails/active_storage/...",
-    "profile_url": "https://ruby-news.kr/@jeff"
+    "avatar_url": "https://ruby-news.dev/rails/active_storage/...",
+    "profile_url": "https://ruby-news.dev/@jeff"
   }
 }
 ```
@@ -315,51 +316,58 @@ Accept: application/json
 - timeout 발생 시 JSON endpoint가 401을 반환하는지
 - timeout 후 Hotwire 화면이 로그인으로 redirect되는지
 
-## 2차 endpoint 후보
+## 피드 JSON
 
 초기 MVP에는 필수는 아니지만, Native 전환을 위해 나중에 필요할 수 있다.
-
-### 1. 피드 JSON
 
 ```http
 GET /feed
 Accept: application/json
+Authorization: Bearer <access-token>
 ```
 
-현재 `/feed`는 인증 필요이며 `ActivitiesController#feed`에서 `Post` 목록을 렌더링한다.
-
-추후 Native 피드 응답 예시:
+현재 `/feed`는 인증 필수이며 다음 응답을 Native Feed가 사용한다.
 
 ```json
 {
   "posts": [
     {
-      "id": "post-slug",
-      "body_html": "<p>...</p>",
+      "id": 1,
+      "slug": "post-slug",
+      "body": "<p>...</p>",
+      "post_type": "short",
+      "status": "published",
       "created_at": "2026-05-06T10:00:00Z",
-      "post_url": "https://ruby-news.kr/posts/post-slug",
-      "author": {
-        "name": "Jeff",
-        "username": "jeff",
-        "at_address": "@jeff@ruby-news.kr",
-        "avatar_url": null,
-        "local": true
-      },
-      "article": {
-        "id": "rails-8-1-released",
-        "title": "Rails 8.1 released",
-        "article_url": "https://ruby-news.kr/articles/rails-8-1-released"
-      },
+      "updated_at": "2026-05-06T10:00:00Z",
       "likes_count": 3,
+      "boosts_count": 2,
       "liked": false,
-      "replies_count": 2
+      "boosted": false,
+      "author_name": "Jeff",
+      "author_host": null,
+      "article_slug": null,
+      "parent_slug": null,
+      "boosted_by": null
     }
   ],
   "pagination": { "next_page": 2, "limit": 20 }
 }
 ```
 
-### 2. 기사 상세 JSON
+포스트 mutation:
+
+```http
+POST|DELETE /api/v1/posts/:slug/like
+POST|DELETE /api/v1/posts/:slug/boost
+```
+
+Native Feed는 목록/페이지네이션/좋아요/부스트를 직접 처리한다. 포스트 상세,
+답글, 삭제는 `/posts/:slug` Hotwire 화면을 유지한다. short-post 작성은
+독립적인 GET 폼 route가 없으므로 작성 버튼에서 `/feed` Hotwire 화면을 연다.
+
+## 2차 endpoint 후보
+
+### 1. 기사 상세 JSON
 
 초기에는 Hotwire Native로 처리하지만, 나중에 Native 상세 전환 시 필요하다.
 
@@ -376,7 +384,7 @@ Accept: application/json
 - liked state
 - original URL
 
-### 3. 프로필 JSON
+### 2. 프로필 JSON
 
 초기에는 Hotwire Native로 처리하지만, 나중에 Native 프로필 전환 시 필요하다.
 

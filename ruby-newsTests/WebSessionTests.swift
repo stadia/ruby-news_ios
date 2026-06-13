@@ -91,11 +91,11 @@ struct WebSessionTests {
         let monitor = WebAuthEventMonitor(
             hasNativeAuthSession: { true },
             isProtectedURL: { _ in true },
-            webSessionIsAuthenticated: { false },
+            webSessionAuthenticationState: { .unauthenticated },
             handleExternalLogout: { logoutCount.value += 1 }
         )
 
-        monitor.requestDidFinish(at: try #require(URL(string: "https://ruby-news.kr/feed")))
+        monitor.requestDidFinish(at: try #require(URL(string: "https://ruby-news.dev/feed")))
         try await Task.sleep(for: .milliseconds(50))
 
         #expect(logoutCount.value == 1)
@@ -106,14 +106,14 @@ struct WebSessionTests {
         let monitor = WebAuthEventMonitor(
             hasNativeAuthSession: { false },
             isProtectedURL: { _ in true },
-            webSessionIsAuthenticated: {
+            webSessionAuthenticationState: {
                 Issue.record("Should not check web session without native auth")
-                return false
+                return .unauthenticated
             },
             handleExternalLogout: { logoutCount.value += 1 }
         )
 
-        monitor.requestDidFinish(at: try #require(URL(string: "https://ruby-news.kr/feed")))
+        monitor.requestDidFinish(at: try #require(URL(string: "https://ruby-news.dev/feed")))
         try await Task.sleep(for: .milliseconds(50))
 
         #expect(logoutCount.value == 0)
@@ -124,14 +124,29 @@ struct WebSessionTests {
         let monitor = WebAuthEventMonitor(
             hasNativeAuthSession: { true },
             isProtectedURL: { _ in false },
-            webSessionIsAuthenticated: {
+            webSessionAuthenticationState: {
                 Issue.record("Should not check public URLs")
-                return false
+                return .unauthenticated
             },
             handleExternalLogout: { logoutCount.value += 1 }
         )
 
-        monitor.requestDidFinish(at: try #require(URL(string: "https://ruby-news.kr/@jeff")))
+        monitor.requestDidFinish(at: try #require(URL(string: "https://ruby-news.dev/@jeff")))
+        try await Task.sleep(for: .milliseconds(50))
+
+        #expect(logoutCount.value == 0)
+    }
+
+    @Test func webAuthEventMonitorKeepsSessionWhenAuthenticationIsIndeterminate() async throws {
+        let logoutCount = LockedBox(0)
+        let monitor = WebAuthEventMonitor(
+            hasNativeAuthSession: { true },
+            isProtectedURL: { _ in true },
+            webSessionAuthenticationState: { .indeterminate },
+            handleExternalLogout: { logoutCount.value += 1 }
+        )
+
+        monitor.requestDidFinish(at: try #require(URL(string: "https://ruby-news.dev/feed")))
         try await Task.sleep(for: .milliseconds(50))
 
         #expect(logoutCount.value == 0)

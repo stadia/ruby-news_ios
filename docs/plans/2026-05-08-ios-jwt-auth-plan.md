@@ -4,7 +4,8 @@
 
 - 뉴스 목록은 비로그인도 볼 수 있는 public JSON으로 유지한다.
 - 로그인은 **Native SwiftUI 폼**에서 JSON 요청으로 처리한다.
-- 회원가입/계정 설정/기사 상세/피드 같은 기존 Rails/Turbo 흐름은 계속 Hotwire Native를 사용한다.
+- 회원가입/계정 설정/기사 상세/포스트 상세 같은 기존 Rails/Turbo 흐름은 계속 Hotwire Native를 사용한다.
+- 피드 목록과 포스트 좋아요/부스트는 JWT Bearer 기반 Native 요청을 사용한다.
 - Native 로그인 응답에서 `Authorization` header의 access token과 body의 `refresh_token`을 함께 저장한다.
 - 별도 bootstrap endpoint는 만들지 않는다. 로그인 응답만으로 필요한 token을 모두 확보한다.
 - Native mutation(좋아요 등)은 JWT `Authorization: Bearer <access_token>`으로 호출한다.
@@ -75,6 +76,7 @@
 - [x] 보호된 Native 요청에서 401 시 refresh 시도
 - [x] refresh 성공 후 원 요청 1회 재시도
 - [x] refresh 실패 시 token clear + 로그인 유도
+- [x] 동시 401 요청의 refresh single-flight 직렬화
 
 주의:
 

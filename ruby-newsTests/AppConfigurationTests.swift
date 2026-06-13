@@ -9,6 +9,10 @@ import Testing
 
 @Suite(.serialized)
 struct AppConfigurationTests {
+    @Test func productionBaseURLUsesRubyNewsDev() async {
+        #expect(AppEnvironment.productionBaseURL.absoluteString == "https://ruby-news.dev")
+    }
+
     @Test func appTabsExposeInitialProductStructure() async throws {
         #expect(AppTab.allCases == [.news, .feed, .profile, .search])
         #expect(AppTab.news.title == "뉴스")
@@ -25,19 +29,19 @@ struct AppConfigurationTests {
     }
 
     @Test func webRoutesBuildExpectedURLs() async throws {
-        let baseURL = try #require(URL(string: "https://ruby-news.kr"))
+        let baseURL = try #require(URL(string: "https://ruby-news.dev"))
 
-        #expect(WebRoute.login.url(relativeTo: baseURL).absoluteString == "https://ruby-news.kr/login")
-        #expect(WebRoute.feed.url(relativeTo: baseURL).absoluteString == "https://ruby-news.kr/feed")
-        #expect(WebRoute.article(id: "rails-8-1").url(relativeTo: baseURL).absoluteString == "https://ruby-news.kr/articles/rails-8-1")
-        #expect(WebRoute.profile(username: "matz").url(relativeTo: baseURL).absoluteString == "https://ruby-news.kr/@matz")
+        #expect(WebRoute.login.url(relativeTo: baseURL).absoluteString == "https://ruby-news.dev/login")
+        #expect(WebRoute.feed.url(relativeTo: baseURL).absoluteString == "https://ruby-news.dev/feed")
+        #expect(WebRoute.article(id: "rails-8-1").url(relativeTo: baseURL).absoluteString == "https://ruby-news.dev/articles/rails-8-1")
+        #expect(WebRoute.profile(username: "matz").url(relativeTo: baseURL).absoluteString == "https://ruby-news.dev/@matz")
     }
 
     @Test func webRoutesPercentEncodeDynamicPathSegments() async throws {
-        let baseURL = try #require(URL(string: "https://ruby-news.kr"))
+        let baseURL = try #require(URL(string: "https://ruby-news.dev"))
 
-        #expect(WebRoute.tag(keyword: "Ruby 뉴스").url(relativeTo: baseURL).absoluteString == "https://ruby-news.kr/tag/Ruby%20%EB%89%B4%EC%8A%A4")
-        #expect(WebRoute.profile(username: "ruby_user").url(relativeTo: baseURL).absoluteString == "https://ruby-news.kr/@ruby_user")
+        #expect(WebRoute.tag(keyword: "Ruby 뉴스").url(relativeTo: baseURL).absoluteString == "https://ruby-news.dev/tag/Ruby%20%EB%89%B4%EC%8A%A4")
+        #expect(WebRoute.profile(username: "ruby_user").url(relativeTo: baseURL).absoluteString == "https://ruby-news.dev/@ruby_user")
     }
 
     @Test func articlesRequestUsesExistingEndpointWithJSONAcceptHeader() async throws {

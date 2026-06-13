@@ -19,6 +19,8 @@ final class NewsViewModel {
     private let toggleLikeAction: ToggleLike
     private let toggleBoostAction: ToggleBoost
     private var activeSearchQuery: String?
+    private var latestFirstPageRequestID: UUID?
+    private var interactionRequestIDs: [String: UUID] = [:]
 
     var articles: [NewsArticle] = []
     var pagination: Pagination?
@@ -110,19 +112,24 @@ final class NewsViewModel {
     func loadMore() async {
         guard canLoadMore else { return }
         let nextCursor = pagination?.nextPage
+        let firstPageRequestID = latestFirstPageRequestID
 
         isLoadingMore = true
         errorMessage = nil
 
         do {
             let response = try await loadArticles(source, nextCursor, activeSearchQuery, selectedTag)
+            guard latestFirstPageRequestID == firstPageRequestID else { return }
             articles.append(contentsOf: response.articles)
             pagination = response.pagination
         } catch {
+            guard latestFirstPageRequestID == firstPageRequestID else { return }
             errorMessage = "뉴스를 더 불러오지 못했습니다."
         }
 
-        isLoadingMore = false
+        if latestFirstPageRequestID == firstPageRequestID {
+            isLoadingMore = false
+        }
     }
 
     func loadMoreIfNeeded(current article: NewsArticle) async {
@@ -137,6 +144,8 @@ final class NewsViewModel {
 
         errorMessage = nil
         let originalArticle = articles[index]
+        let requestID = UUID()
+        interactionRequestIDs[article.id] = requestID
         var optimisticArticle = originalArticle
         optimisticArticle.liked.toggle()
         optimisticArticle.likersCount += optimisticArticle.liked ? 1 : -1
@@ -145,17 +154,24 @@ final class NewsViewModel {
 
         do {
             let response = try await toggleLikeAction(originalArticle)
-            articles[index].liked = response.liked
-            articles[index].likersCount = response.likesCount
+            guard interactionRequestIDs[article.id] == requestID,
+                  let updatedIndex = articles.firstIndex(where: { $0.id == article.id }) else {
+                return
+            }
+            articles[updatedIndex].liked = response.liked
+            articles[updatedIndex].likersCount = response.likesCount
         } catch APIError.unauthorized {
-            articles[index] = originalArticle
-            errorMessage = "로그인이 필요합니다."
+            if restore(originalArticle, requestID: requestID) {
+                errorMessage = "로그인이 필요합니다."
+            }
         } catch APIError.unacceptableStatusCode(401) {
-            articles[index] = originalArticle
-            errorMessage = "로그인이 필요합니다."
+            if restore(originalArticle, requestID: requestID) {
+                errorMessage = "로그인이 필요합니다."
+            }
         } catch {
-            articles[index] = originalArticle
-            errorMessage = "좋아요 처리에 실패했습니다."
+            if restore(originalArticle, requestID: requestID) {
+                errorMessage = "좋아요 처리에 실패했습니다."
+            }
         }
     }
 
@@ -164,6 +180,8 @@ final class NewsViewModel {
 
         errorMessage = nil
         let originalArticle = articles[index]
+        let requestID = UUID()
+        interactionRequestIDs[article.id] = requestID
         var optimisticArticle = originalArticle
         optimisticArticle.boosted.toggle()
         optimisticArticle.boostsCount += optimisticArticle.boosted ? 1 : -1
@@ -172,33 +190,57 @@ final class NewsViewModel {
 
         do {
             let response = try await toggleBoostAction(originalArticle)
-            articles[index].boosted = response.boosted
-            articles[index].boostsCount = response.boostsCount
+            guard interactionRequestIDs[article.id] == requestID,
+                  let updatedIndex = articles.firstIndex(where: { $0.id == article.id }) else {
+                return
+            }
+            articles[updatedIndex].boosted = response.boosted
+            articles[updatedIndex].boostsCount = response.boostsCount
         } catch APIError.unauthorized {
-            articles[index] = originalArticle
-            errorMessage = "로그인이 필요합니다."
+            if restore(originalArticle, requestID: requestID) {
+                errorMessage = "로그인이 필요합니다."
+            }
         } catch APIError.unacceptableStatusCode(401) {
-            articles[index] = originalArticle
-            errorMessage = "로그인이 필요합니다."
+            if restore(originalArticle, requestID: requestID) {
+                errorMessage = "로그인이 필요합니다."
+            }
         } catch {
-            articles[index] = originalArticle
-            errorMessage = "부스트 처리에 실패했습니다."
+            if restore(originalArticle, requestID: requestID) {
+                errorMessage = "부스트 처리에 실패했습니다."
+            }
         }
     }
 
     private func loadFirstPage() async {
+        let requestID = UUID()
+        latestFirstPageRequestID = requestID
+        interactionRequestIDs.removeAll()
         isLoading = true
+        isLoadingMore = false
         errorMessage = nil
 
         do {
             let response = try await loadArticles(source, nil, activeSearchQuery, selectedTag)
+            guard latestFirstPageRequestID == requestID else { return }
             articles = response.articles
             pagination = response.pagination
         } catch {
+            guard latestFirstPageRequestID == requestID else { return }
             errorMessage = "뉴스를 불러오지 못했습니다."
         }
 
-        isLoading = false
+        if latestFirstPageRequestID == requestID {
+            isLoading = false
+        }
+    }
+
+    private func restore(_ article: NewsArticle, requestID: UUID) -> Bool {
+        guard interactionRequestIDs[article.id] == requestID,
+              let index = articles.firstIndex(where: { $0.id == article.id }) else {
+            return false
+        }
+        articles[index] = article
+        return true
     }
 
     private var normalizedSearchQuery: String? {

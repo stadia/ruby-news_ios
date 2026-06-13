@@ -23,14 +23,19 @@ final class ruby_newsUITests: XCTestCase {
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
+    func testPrimaryTabsExistAndCanBeSelected() throws {
         let app = XCUIApplication()
         app.launch()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // XCUIAutomation Documentation
-        // https://developer.apple.com/documentation/xcuiautomation
+        let tabBar = app.tabBars.firstMatch
+        XCTAssertTrue(tabBar.waitForExistence(timeout: 5))
+
+        for title in ["뉴스", "피드", "내 정보"] {
+            let tab = tabBar.buttons[title]
+            XCTAssertTrue(tab.exists, "\(title) 탭이 표시되어야 합니다.")
+            tab.tap()
+            XCTAssertTrue(tab.isSelected, "\(title) 탭을 선택할 수 있어야 합니다.")
+        }
     }
 
     @MainActor

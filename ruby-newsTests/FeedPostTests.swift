@@ -5,6 +5,34 @@ import Testing
 
 @MainActor
 struct FeedPostTests {
+    @Test func feedPostStoresRenderedBodyAndLinksAfterDecoding() async throws {
+        let post = try APIClient.decoder.decode(
+            FeedPost.self,
+            from: Data(
+                """
+                {
+                  "id": 1,
+                  "slug": "stored-rendering",
+                  "body": "<p>본문 <a href=\\"https://example.com\\">링크</a></p>",
+                  "post_type": "short",
+                  "created_at": "2026-06-13T00:00:00Z",
+                  "updated_at": "2026-06-13T00:00:00Z",
+                  "likes_count": 0,
+                  "boosts_count": 0,
+                  "liked": false,
+                  "boosted": false
+                }
+                """.utf8
+            )
+        )
+        let storedPropertyNames = Set(Mirror(reflecting: post).children.compactMap(\.label))
+
+        #expect(storedPropertyNames.contains("displayBody"))
+        #expect(storedPropertyNames.contains("links"))
+        #expect(post.displayBody == "본문 링크")
+        #expect(post.links == [FeedLink(text: "링크", url: URL(string: "https://example.com")!)])
+    }
+
     @Test
     func feedResponseDecodesDocumentedServerShape() throws {
         let json = """

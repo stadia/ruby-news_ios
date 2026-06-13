@@ -312,6 +312,71 @@ struct APIClientTests {
         #expect(authBox.value.refreshToken == refreshedAuth.refreshToken)
     }
 
+    @Test func concurrentUnauthorizedRequestsShareOneRefresh() async throws {
+        let staleAuth = AuthSession(
+            accessToken: "stale-access",
+            refreshToken: "refresh-token",
+            expiresAt: Date().addingTimeInterval(-60)
+        )
+        let authBox = LockedBox(staleAuth)
+        let condition = NSCondition()
+        var staleRequestCount = 0
+        var refreshRequestCount = 0
+
+        let session = URLSession.mockSession { request in
+            let path = request.url?.path ?? ""
+            if path == "/api/v1/auth/refresh" {
+                condition.lock()
+                refreshRequestCount += 1
+                condition.unlock()
+                return (
+                    HTTPURLResponse(
+                        url: request.url!,
+                        statusCode: 200,
+                        httpVersion: nil,
+                        headerFields: ["Content-Type": "application/json"]
+                    )!,
+                    Data(#"{"access_token":"fresh-access","refresh_token":"fresh-refresh","expires_in":900}"#.utf8)
+                )
+            }
+
+            let authorization = request.value(forHTTPHeaderField: "Authorization")
+            if authorization == "Bearer stale-access" {
+                condition.lock()
+                staleRequestCount += 1
+                if staleRequestCount < 2 {
+                    _ = condition.wait(until: Date().addingTimeInterval(2))
+                } else {
+                    condition.broadcast()
+                }
+                condition.unlock()
+                return (
+                    HTTPURLResponse(url: request.url!, statusCode: 401, httpVersion: nil, headerFields: nil)!,
+                    Data(#"{"error":"unauthorized"}"#.utf8)
+                )
+            }
+
+            let slug = path.contains("first") ? "first" : "second"
+            return (
+                HTTPURLResponse(url: request.url!, statusCode: 201, httpVersion: nil, headerFields: nil)!,
+                Data(
+                    """
+                    {"likeable_type":"Article","likeable_slug":"\(slug)","liked":true,"likes_count":1}
+                    """.utf8
+                )
+            )
+        }
+
+        var client = APIClient(session: session, tokenProvider: { authBox.value })
+        client.onTokenRefreshed = { authBox.value = $0 }
+
+        async let first = client.like(articleSlug: "first")
+        async let second = client.like(articleSlug: "second")
+        _ = try await (first, second)
+
+        #expect(refreshRequestCount == 1)
+    }
+
     @Test func boostSendsBearerTokenAndDecodesResponse() async throws {
         let auth = AuthSession(accessToken: "jwt-token", refreshToken: "refresh", expiresAt: Date().addingTimeInterval(900))
         let responseBody = """

@@ -17,11 +17,14 @@ The first native feed release includes:
 - Boost attribution through `boosted_by`
 - Native post like and boost toggles
 - Hotwire post detail navigation for posts with a slug
+- Hotwire post creation entry through the existing `/feed` form
 - Existing signed-out `SignedOutView`
 
-Post creation, reply composition, deletion, profile navigation, attachments,
-and native thread rendering are not part of this change. Those flows remain
-available after opening the Hotwire post detail where the server provides them.
+Native post creation, reply composition, deletion, profile navigation,
+attachments, and native thread rendering are not part of this change. The
+toolbar opens `/feed` in Hotwire for post creation because the server does not
+provide a standalone short-post form route. Other flows remain available after
+opening the Hotwire post detail where the server provides them.
 
 ## Considered Approaches
 
@@ -142,7 +145,8 @@ actions because the documented server endpoints require a slug.
 - Signed in: native feed
 
 The signed-in feed uses a plain `List` under a `NavigationStack` with the title
-`피드`.
+`피드`. A compose toolbar button presents the existing `/feed` Hotwire screen,
+which contains the server-rendered short-post form.
 
 Each `FeedPostRow` displays:
 
@@ -183,5 +187,5 @@ Simulator verification covers:
 - Pull to refresh and pagination
 - Like and boost visual state changes
 - Post row opens Hotwire detail
+- Compose button opens the Hotwire `/feed` form
 - Signed-out Feed tab still shows the existing login UI
-
