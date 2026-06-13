@@ -34,7 +34,7 @@ struct FeedPostRow: View {
                     }
                 }
 
-                Text(post.displayBody)
+                Text(Self.attributedBody(for: post))
                     .font(.body)
                     .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -112,5 +112,20 @@ struct FeedPostRow: View {
         case .short:
             return "arrowshape.turn.up.left"
         }
+    }
+
+    static func attributedBody(for post: FeedPost) -> AttributedString {
+        var attributed = AttributedString(post.displayBody)
+        var searchStart = attributed.startIndex
+
+        for link in post.links {
+            guard let range = attributed[searchStart...].range(of: link.text) else { continue }
+            attributed[range].link = link.url
+            attributed[range].foregroundColor = .rnBrand
+            attributed[range].underlineStyle = .single
+            searchStart = range.upperBound
+        }
+
+        return attributed
     }
 }

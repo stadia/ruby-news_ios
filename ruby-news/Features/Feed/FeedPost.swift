@@ -40,6 +40,11 @@ struct FeedPagination: Decodable, Equatable {
     }
 }
 
+struct FeedLink: Equatable {
+    let text: String
+    let url: URL
+}
+
 struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
     let id: Int
     let slug: String?
@@ -69,6 +74,39 @@ struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
     var displayBody: String {
         Self.plainText(fromHTML: body)
     }
+
+    /// 본문 HTML의 `<a href="...">텍스트</a>` 앵커를 문서 순서대로 추출한다.
+    /// `text`는 `displayBody`에 나타나는 평문과 동일하게 정리된다.
+    var links: [FeedLink] {
+        Self.anchorLinks(fromHTML: body)
+    }
+
+    static func anchorLinks(fromHTML html: String) -> [FeedLink] {
+        guard let regex = Self.anchorRegex else { return [] }
+        let ns = html as NSString
+        let matches = regex.matches(in: html, range: NSRange(location: 0, length: ns.length))
+        return matches.compactMap { match in
+            let rawHref = ns.substring(with: match.range(at: 1))
+            let rawText = ns.substring(with: match.range(at: 2))
+            // href는 HTML 블록이 아니므로 엔티티 디코딩만 한다.
+            // (plainText의 블록/트림 파이프라인은 URL에 부적절)
+            let href = decodeEntities(rawHref)
+            // 앵커 내부 텍스트는 중첩 태그가 있을 수 있으므로 평문화한다.
+            let text = plainText(fromHTML: rawText)
+            guard !text.isEmpty, let url = URL(string: href) else { return nil }
+            return FeedLink(text: text, url: url)
+        }
+    }
+
+    /// `links`는 셀 렌더마다 호출되므로 정규식을 매번
+    /// 재컴파일하지 않도록 한 번만 컴파일한다.
+    private static let anchorRegex: NSRegularExpression? = {
+        let pattern = "<a\\b[^>]*?href\\s*=\\s*[\"']([^\"']*)[\"'][^>]*>(.*?)</a>"
+        return try? NSRegularExpression(
+            pattern: pattern,
+            options: [.caseInsensitive, .dotMatchesLineSeparators]
+        )
+    }()
 
     static func plainText(fromHTML html: String) -> String {
         var text = html
