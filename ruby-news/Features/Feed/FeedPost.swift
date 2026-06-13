@@ -1,0 +1,180 @@
+import Foundation
+
+enum FeedPostType: String, Decodable {
+    case short
+    case blog
+    case comment
+}
+
+struct FeedResponse: Decodable {
+    let posts: [FeedPost]
+    let pagination: FeedPagination
+}
+
+struct FeedPagination: Decodable, Equatable {
+    let nextPage: String?
+    let limit: Int
+
+    enum CodingKeys: String, CodingKey {
+        case nextPage
+        case limit
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        limit = try container.decode(Int.self, forKey: .limit)
+        // next_page는 서버의 pagy(:countless)에서 정수로 반환되거나 null.
+        // iOS에서는 opaque string으로 처리한다.
+        if let intValue = try? container.decode(Int.self, forKey: .nextPage) {
+            nextPage = String(intValue)
+        } else if let stringValue = try? container.decode(String.self, forKey: .nextPage) {
+            nextPage = stringValue
+        } else {
+            nextPage = nil
+        }
+    }
+
+    init(nextPage: String? = nil, limit: Int) {
+        self.nextPage = nextPage
+        self.limit = limit
+    }
+}
+
+struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
+    let id: Int
+    let slug: String?
+    let body: String
+    let postType: FeedPostType
+    let status: String?
+    let createdAt: Date?
+    let updatedAt: Date?
+    var likesCount: Int
+    var boostsCount: Int
+    var liked: Bool
+    var boosted: Bool
+    let authorName: String?
+    let authorHost: String?
+    let articleSlug: String?
+    let parentSlug: String?
+    let boostedBy: String?
+
+    var isInteractive: Bool {
+        slug?.isEmpty == false
+    }
+
+    /// 서버는 `body`를 `<p>...</p>` 형태의 HTML로 내려준다. SwiftUI `List`(UICollectionView)
+    /// 셀 본문에서 `NSAttributedString`의 HTML 파서를 호출하면 중첩 런루프가 컬렉션 뷰의
+    /// 셀 dequeue 레이아웃과 충돌해 크래시가 발생한다. 설계 스펙도 "plain post body"를 요구하므로
+    /// 런루프를 돌리지 않는 순수 문자열 처리로 태그를 제거한 평문을 제공한다.
+    var displayBody: String {
+        Self.plainText(fromHTML: body)
+    }
+
+    static func plainText(fromHTML html: String) -> String {
+        var text = html
+        // 블록 경계와 줄바꿈 태그를 개행으로 치환한다.
+        for token in ["<br>", "<br/>", "<br />", "</p>", "</div>", "</li>",
+                      "</h1>", "</h2>", "</h3>", "</h4>", "</h5>", "</h6>", "</blockquote>"] {
+            text = text.replacingOccurrences(
+                of: token,
+                with: "\n",
+                options: [.caseInsensitive]
+            )
+        }
+        // 남은 모든 태그 제거.
+        text = text.replacingOccurrences(
+            of: "<[^>]+>",
+            with: "",
+            options: [.regularExpression]
+        )
+        text = decodeEntities(text)
+        // 빈 줄을 정리하고 줄 단위로 트림한다.
+        return text
+            .components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n")
+    }
+
+    private static func decodeEntities(_ value: String) -> String {
+        var result = value
+        let entities: [(String, String)] = [
+            ("&lt;", "<"),
+            ("&gt;", ">"),
+            ("&quot;", "\""),
+            ("&#39;", "'"),
+            ("&#x27;", "'"),
+            ("&apos;", "'"),
+            ("&nbsp;", "\u{00a0}")
+        ]
+        for (entity, replacement) in entities {
+            result = result.replacingOccurrences(of: entity, with: replacement)
+        }
+        // &amp;는 이중 디코딩을 피하기 위해 마지막에 처리한다.
+        return result.replacingOccurrences(of: "&amp;", with: "&")
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case slug
+        case body
+        case postType
+        case status
+        case createdAt
+        case updatedAt
+        case likesCount
+        case boostsCount
+        case liked
+        case boosted
+        case authorName
+        case authorHost
+        case articleSlug
+        case parentSlug
+        case boostedBy
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        slug = try container.decodeIfPresent(String.self, forKey: .slug)
+        body = try container.decode(String.self, forKey: .body)
+        postType = try container.decode(FeedPostType.self, forKey: .postType)
+        status = try container.decodeIfPresent(String.self, forKey: .status)
+        likesCount = try container.decode(Int.self, forKey: .likesCount)
+        boostsCount = try container.decode(Int.self, forKey: .boostsCount)
+        liked = try container.decode(Bool.self, forKey: .liked)
+        boosted = try container.decode(Bool.self, forKey: .boosted)
+        authorName = try container.decodeIfPresent(String.self, forKey: .authorName)
+        authorHost = try container.decodeIfPresent(String.self, forKey: .authorHost)
+        articleSlug = try container.decodeIfPresent(String.self, forKey: .articleSlug)
+        parentSlug = try container.decodeIfPresent(String.self, forKey: .parentSlug)
+        boostedBy = try container.decodeIfPresent(String.self, forKey: .boostedBy)
+
+        let createdAtValue = try container.decode(String.self, forKey: .createdAt)
+        let updatedAtValue = try container.decode(String.self, forKey: .updatedAt)
+        createdAt = Self.parseDate(createdAtValue)
+        updatedAt = Self.parseDate(updatedAtValue)
+    }
+
+    private static func parseDate(_ value: String) -> Date? {
+        fractionalDateFormatter.date(from: value)
+            ?? dateFormatter.date(from: value)
+            ?? rubyDateFormatter.date(from: value)
+    }
+
+    private static let fractionalDateFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    private static let dateFormatter = ISO8601DateFormatter()
+
+    /// 서버의 Alba/Oj serialization이 반환하는 Ruby Time 형식용 포매터. (예: "2026-03-21 16:40:35 +0900")
+    private static let rubyDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss Z"
+        return formatter
+    }()
+}

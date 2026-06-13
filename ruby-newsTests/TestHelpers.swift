@@ -62,6 +62,38 @@ enum TestHelpers {
         return try APIClient.decoder.decode(NewsArticle.self, from: Data(json.utf8))
     }
 
+    static func makeFeedPost(
+        id: Int,
+        slug: String?,
+        liked: Bool = false,
+        likesCount: Int = 0,
+        boosted: Bool = false,
+        boostsCount: Int = 0
+    ) throws -> FeedPost {
+        let slugValue = slug.map { "\"\($0)\"" } ?? "null"
+        let json = """
+        {
+          "id": \(id),
+          "slug": \(slugValue),
+          "body": "post-\(id)",
+          "post_type": "short",
+          "status": "published",
+          "created_at": "2026-06-13 00:30:00 +0900",
+          "updated_at": "2026-06-13 00:31:00 +0900",
+          "likes_count": \(likesCount),
+          "boosts_count": \(boostsCount),
+          "liked": \(liked),
+          "boosted": \(boosted),
+          "author_name": "Author \(id)",
+          "author_host": null,
+          "article_slug": null,
+          "parent_slug": null,
+          "boosted_by": null
+        }
+        """
+        return try APIClient.decoder.decode(FeedPost.self, from: Data(json.utf8))
+    }
+
     static func makeCookie(name: String, value: String, domain: String, path: String = "/") throws -> HTTPCookie {
         let properties: [HTTPCookiePropertyKey: Any] = [
             .name: name,

@@ -414,6 +414,190 @@ struct APIClientTests {
         #expect(authBox.value.accessToken == "fresh-access")
     }
 
+    @Test func feedSendsPageAndBearerTokenAndDecodesResponse() async throws {
+        let auth = AuthSession(
+            accessToken: "jwt-token",
+            refreshToken: "refresh",
+            expiresAt: Date().addingTimeInterval(900)
+        )
+        let responseBody = """
+        {
+          "posts": [{
+            "id": 42,
+            "slug": "native-feed-post",
+            "body": "Native Feed",
+            "post_type": "short",
+            "status": "published",
+            "created_at": "2026-06-13 00:30:00 +0900",
+            "updated_at": "2026-06-13 00:31:00 +0900",
+            "likes_count": 3,
+            "boosts_count": 2,
+            "liked": true,
+            "boosted": false
+          }],
+          "pagination": {"next_page": 3, "limit": 20}
+        }
+        """
+        let session = URLSession.mockSession { request in
+            #expect(request.url?.absoluteString == "http://localhost:3000/feed?page=2")
+            #expect(request.httpMethod == "GET")
+            #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer jwt-token")
+            #expect(request.value(forHTTPHeaderField: "Accept") == "application/json")
+            return (
+                HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: ["Content-Type": "application/json"]
+                )!,
+                Data(responseBody.utf8)
+            )
+        }
+        let client = APIClient(session: session, tokenProvider: { auth })
+
+        let response = try await client.feed(page: "2")
+
+        #expect(response.posts.map(\.id) == [42])
+        #expect(response.pagination.nextPage == "3")
+    }
+
+    @Test func feedRefreshesTokenAndRetriesAfterUnauthorized() async throws {
+        let authBox = LockedBox(AuthSession(
+            accessToken: "stale-access",
+            refreshToken: "refresh-token",
+            expiresAt: Date().addingTimeInterval(-60)
+        ))
+        var feedHeaders: [String?] = []
+        let session = URLSession.mockSession { request in
+            switch request.url?.path {
+            case "/feed":
+                feedHeaders.append(request.value(forHTTPHeaderField: "Authorization"))
+                let isRetry = feedHeaders.count == 2
+                return (
+                    HTTPURLResponse(
+                        url: request.url!,
+                        statusCode: isRetry ? 200 : 401,
+                        httpVersion: nil,
+                        headerFields: nil
+                    )!,
+                    isRetry
+                        ? Data(#"{"posts":[],"pagination":{"next_page":null,"limit":20}}"#.utf8)
+                        : Data(#"{"error":"unauthorized"}"#.utf8)
+                )
+            case "/api/v1/auth/refresh":
+                return (
+                    HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+                    Data(#"{"access_token":"fresh-access","refresh_token":"fresh-refresh","expires_in":900}"#.utf8)
+                )
+            default:
+                Issue.record("Unexpected path: \(request.url?.path ?? "nil")")
+                return (
+                    HTTPURLResponse(url: request.url!, statusCode: 404, httpVersion: nil, headerFields: nil)!,
+                    nil
+                )
+            }
+        }
+        var client = APIClient(session: session, tokenProvider: { authBox.value })
+        client.onTokenRefreshed = { authBox.value = $0 }
+
+        _ = try await client.feed()
+
+        #expect(feedHeaders == ["Bearer stale-access", "Bearer fresh-access"])
+        #expect(authBox.value.accessToken == "fresh-access")
+    }
+
+    @Test func postLikeAndUnlikeUsePostV1Path() async throws {
+        let auth = AuthSession(
+            accessToken: "jwt-token",
+            refreshToken: "refresh",
+            expiresAt: Date().addingTimeInterval(900)
+        )
+        var methods: [String?] = []
+        let session = URLSession.mockSession { request in
+            #expect(request.url?.absoluteString == "http://localhost:3000/api/v1/posts/post-42/like")
+            #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer jwt-token")
+            if let body = TestHelpers.requestBodyData(from: request),
+               let payload = try? JSONSerialization.jsonObject(with: body) as? [String: String] {
+                #expect(payload["likeable_type"] == "Post")
+            } else {
+                Issue.record("Expected post like request body")
+            }
+            methods.append(request.httpMethod)
+            return (
+                HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: request.httpMethod == "POST" ? 201 : 200,
+                    httpVersion: nil,
+                    headerFields: nil
+                )!,
+                Data("""
+                {
+                  "likeable_type": "Post",
+                  "likeable_slug": "post-42",
+                  "liked": \(request.httpMethod == "POST"),
+                  "likes_count": \(request.httpMethod == "POST" ? 4 : 3)
+                }
+                """.utf8)
+            )
+        }
+        let client = APIClient(session: session, tokenProvider: { auth })
+
+        let liked = try await client.like(postSlug: "post-42")
+        let unliked = try await client.unlike(postSlug: "post-42")
+
+        #expect(liked.liked)
+        #expect(liked.likesCount == 4)
+        #expect(!unliked.liked)
+        #expect(unliked.likesCount == 3)
+        #expect(methods == ["POST", "DELETE"])
+    }
+
+    @Test func postBoostAndUnboostUsePostV1Path() async throws {
+        let auth = AuthSession(
+            accessToken: "jwt-token",
+            refreshToken: "refresh",
+            expiresAt: Date().addingTimeInterval(900)
+        )
+        var methods: [String?] = []
+        let session = URLSession.mockSession { request in
+            #expect(request.url?.absoluteString == "http://localhost:3000/api/v1/posts/post-42/boost")
+            #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer jwt-token")
+            if let body = TestHelpers.requestBodyData(from: request),
+               let payload = try? JSONSerialization.jsonObject(with: body) as? [String: String] {
+                #expect(payload["boostable_type"] == "Post")
+            } else {
+                Issue.record("Expected post boost request body")
+            }
+            methods.append(request.httpMethod)
+            return (
+                HTTPURLResponse(
+                    url: request.url!,
+                    statusCode: request.httpMethod == "POST" ? 201 : 200,
+                    httpVersion: nil,
+                    headerFields: nil
+                )!,
+                Data("""
+                {
+                  "boostable_type": "Post",
+                  "boostable_slug": "post-42",
+                  "boosted": \(request.httpMethod == "POST"),
+                  "boosts_count": \(request.httpMethod == "POST" ? 3 : 2)
+                }
+                """.utf8)
+            )
+        }
+        let client = APIClient(session: session, tokenProvider: { auth })
+
+        let boosted = try await client.boost(postSlug: "post-42")
+        let unboosted = try await client.unboost(postSlug: "post-42")
+
+        #expect(boosted.boosted)
+        #expect(boosted.boostsCount == 3)
+        #expect(!unboosted.boosted)
+        #expect(unboosted.boostsCount == 2)
+        #expect(methods == ["POST", "DELETE"])
+    }
+
     /// v1 공통 에러 포맷(`{ "error": "parameter_missing", "parameter": ... }`)이
     /// refresh 응답으로 와도, retry 경로가 호출자에게 `.unauthorized`를 전달해야 한다.
     @Test func refreshFailureWithV1ParameterMissingSurfacesAsUnauthorized() async throws {

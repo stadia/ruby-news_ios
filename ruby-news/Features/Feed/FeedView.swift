@@ -7,20 +7,129 @@ import SwiftUI
 
 struct FeedView: View {
     @Environment(SessionStore.self) private var sessionStore
+    @State private var viewModel = FeedViewModel()
+    @State private var sheetRoute: FeedSheetRoute?
 
     var body: some View {
         Group {
             if sessionStore.isLoading && !sessionStore.isSignedIn {
                 ProgressView("로딩 중...")
             } else if sessionStore.isSignedIn {
-                HotwireScreen(route: .feed)
-                    .ignoresSafeArea(edges: .bottom)
+                nativeFeed
             } else {
                 NavigationStack {
                     SignedOutView()
                         .navigationTitle("피드")
                 }
             }
+        }
+        .sheet(item: $sheetRoute) { route in
+            HotwireScreen(route: route.webRoute)
+                .ignoresSafeArea(edges: .bottom)
+        }
+    }
+
+    private var nativeFeed: some View {
+        NavigationStack {
+            content
+                .navigationTitle("피드")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            sheetRoute = .composer
+                        } label: {
+                            Label("포스트 작성", systemImage: "square.and.pencil")
+                        }
+                    }
+                }
+        }
+        .task {
+            guard viewModel.posts.isEmpty else { return }
+            await viewModel.load()
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if viewModel.isLoading && viewModel.posts.isEmpty {
+            ProgressView("피드를 불러오는 중...")
+        } else if let errorMessage = viewModel.errorMessage, viewModel.posts.isEmpty {
+            ContentUnavailableView {
+                Label(errorMessage, systemImage: "exclamationmark.triangle")
+            } actions: {
+                Button("다시 시도") {
+                    Task { await viewModel.load() }
+                }
+            }
+        } else if viewModel.posts.isEmpty {
+            ContentUnavailableView {
+                Label("새 피드가 없습니다", systemImage: "text.bubble")
+            } description: {
+                Text("팔로우한 사용자의 새 소식이 여기에 표시됩니다.")
+            }
+        } else {
+            List {
+                if let errorMessage = viewModel.errorMessage {
+                    Text(errorMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                }
+
+                ForEach(viewModel.posts) { post in
+                    FeedPostRow(
+                        post: post,
+                        onSelected: {
+                            guard let slug = post.slug, !slug.isEmpty else { return }
+                            sheetRoute = .post(slug)
+                        },
+                        onLikeTapped: {
+                            Task { await viewModel.toggleLike(post) }
+                        },
+                        onBoostTapped: {
+                            Task { await viewModel.toggleBoost(post) }
+                        }
+                    )
+                    .onAppear {
+                        Task { await viewModel.loadMoreIfNeeded(current: post) }
+                    }
+                }
+
+                if viewModel.isLoadingMore {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                        Spacer()
+                    }
+                }
+            }
+            .listStyle(.plain)
+            .refreshable {
+                await viewModel.load()
+            }
+        }
+    }
+}
+
+private enum FeedSheetRoute: Identifiable {
+    case composer
+    case post(String)
+
+    var id: String {
+        switch self {
+        case .composer:
+            "composer"
+        case .post(let slug):
+            "post-\(slug)"
+        }
+    }
+
+    var webRoute: WebRoute {
+        switch self {
+        case .composer:
+            .feed
+        case .post(let slug):
+            .post(id: slug)
         }
     }
 }

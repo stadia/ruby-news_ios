@@ -69,6 +69,18 @@ struct APIClient {
         }
     }
 
+    func feed(page: String? = nil) async throws -> FeedResponse {
+        try await withAuthRetry {
+            let accessToken = tokenProvider?()?.accessToken
+            let queryItems = page.map { [URLQueryItem(name: "page", value: $0)] } ?? []
+            let request = APIRequest(path: "/feed", queryItems: queryItems)
+                .urlRequest(relativeTo: baseURL, accessToken: accessToken)
+            let (data, response) = try await session.data(for: request)
+            try validate(response)
+            return try Self.decoder.decode(FeedResponse.self, from: data)
+        }
+    }
+
     struct AccountResult {
         let user: CurrentUser
         let auth: AuthSession?
@@ -117,19 +129,35 @@ struct APIClient {
     }
 
     func like(articleSlug: String) async throws -> LikeResponse {
-        try await sendLikeRequest(articleSlug: articleSlug, method: "POST")
+        try await sendLikeRequest(target: .article(articleSlug), method: "POST")
     }
 
     func unlike(articleSlug: String) async throws -> LikeResponse {
-        try await sendLikeRequest(articleSlug: articleSlug, method: "DELETE")
+        try await sendLikeRequest(target: .article(articleSlug), method: "DELETE")
     }
 
     func boost(articleSlug: String) async throws -> BoostResponse {
-        try await sendBoostRequest(articleSlug: articleSlug, method: "POST")
+        try await sendBoostRequest(target: .article(articleSlug), method: "POST")
     }
 
     func unboost(articleSlug: String) async throws -> BoostResponse {
-        try await sendBoostRequest(articleSlug: articleSlug, method: "DELETE")
+        try await sendBoostRequest(target: .article(articleSlug), method: "DELETE")
+    }
+
+    func like(postSlug: String) async throws -> LikeResponse {
+        try await sendLikeRequest(target: .post(postSlug), method: "POST")
+    }
+
+    func unlike(postSlug: String) async throws -> LikeResponse {
+        try await sendLikeRequest(target: .post(postSlug), method: "DELETE")
+    }
+
+    func boost(postSlug: String) async throws -> BoostResponse {
+        try await sendBoostRequest(target: .post(postSlug), method: "POST")
+    }
+
+    func unboost(postSlug: String) async throws -> BoostResponse {
+        try await sendBoostRequest(target: .post(postSlug), method: "DELETE")
     }
 
     func login(email: String, password: String) async throws -> LoginResult {
@@ -156,14 +184,14 @@ struct APIClient {
         return LoginResult(user: loginBody.user, auth: authSession)
     }
 
-    private func sendLikeRequest(articleSlug: String, method: String) async throws -> LikeResponse {
+    private func sendLikeRequest(target: InteractionTarget, method: String) async throws -> LikeResponse {
         try await withAuthRetry {
             let accessToken = tokenProvider?()?.accessToken
-            var request = APIRequest(path: "/api/v1/articles/\(articleSlug)/like")
+            var request = APIRequest(path: "\(target.path)/like")
                 .urlRequest(relativeTo: baseURL, accessToken: accessToken)
             request.httpMethod = method
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = try JSONEncoder().encode(["likeable_type": "Article"])
+            request.httpBody = try JSONEncoder().encode(["likeable_type": target.type])
 
             let (data, response) = try await session.data(for: request)
             try validate(response)
@@ -171,14 +199,14 @@ struct APIClient {
         }
     }
 
-    private func sendBoostRequest(articleSlug: String, method: String) async throws -> BoostResponse {
+    private func sendBoostRequest(target: InteractionTarget, method: String) async throws -> BoostResponse {
         try await withAuthRetry {
             let accessToken = tokenProvider?()?.accessToken
-            var request = APIRequest(path: "/api/v1/articles/\(articleSlug)/boost")
+            var request = APIRequest(path: "\(target.path)/boost")
                 .urlRequest(relativeTo: baseURL, accessToken: accessToken)
             request.httpMethod = method
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = try JSONEncoder().encode(["boostable_type": "Article"])
+            request.httpBody = try JSONEncoder().encode(["boostable_type": target.type])
 
             let (data, response) = try await session.data(for: request)
             try validate(response)
@@ -222,6 +250,29 @@ struct APIClient {
         let newSession = try await refreshTokens(refreshToken: refreshToken)
         onTokenRefreshed?(newSession)
         return newSession
+    }
+
+    private enum InteractionTarget {
+        case article(String)
+        case post(String)
+
+        var path: String {
+            switch self {
+            case .article(let slug):
+                return "/api/v1/articles/\(slug)"
+            case .post(let slug):
+                return "/api/v1/posts/\(slug)"
+            }
+        }
+
+        var type: String {
+            switch self {
+            case .article:
+                return "Article"
+            case .post:
+                return "Post"
+            }
+        }
     }
 }
 
