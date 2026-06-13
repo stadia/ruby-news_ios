@@ -146,6 +146,32 @@ struct FeedPostTests {
     }
 
     @Test
+    func displayBodyPreservesBlankLineBetweenParagraphs() throws {
+        let post = try makePost(body: "<p>A</p><p><br></p><p>B</p>")
+
+        #expect(post.displayBody == "A\n\nB")
+    }
+
+    @Test
+    func displayBodyCollapsesExcessiveBlankLines() throws {
+        let post = try makePost(body: "<p>A</p><p><br></p><p><br></p><p>B</p>")
+
+        #expect(post.displayBody == "A\n\nB")
+    }
+
+    @Test
+    func displayBodyPreservesParagraphSpacingForMultiParagraphPost() throws {
+        let post = try makePost(
+            body: "<p>안녕하십니까?</p><p><br></p><p>오늘 하루도 잘 지내셨습니까?</p>"
+                + "<p><br></p><p>저는 장문 쓰기 기능을 만들고 있네요.</p><p><br></p><p>추가 하는 글 완료</p>"
+        )
+
+        #expect(
+            post.displayBody == "안녕하십니까?\n\n오늘 하루도 잘 지내셨습니까?\n\n저는 장문 쓰기 기능을 만들고 있네요.\n\n추가 하는 글 완료"
+        )
+    }
+
+    @Test
     func linksExtractAnchorHrefAndTextInOrder() throws {
         let post = try makePost(
             body: "<p><a href=\"https://a.com\">A</a> 그리고 <a href='https://b.com'>B</a></p>"

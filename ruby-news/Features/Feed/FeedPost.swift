@@ -146,12 +146,15 @@ struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
             options: [.regularExpression]
         )
         text = decodeEntities(text)
-        // 빈 줄을 정리하고 줄 단위로 트림한다.
-        return text
+        // 줄 단위 공백은 트림하되, 작성자가 의도한 문단 사이 빈 줄은 보존한다.
+        // 연속된 빈 줄은 최대 한 줄(\n\n)로 합치고 양끝 공백/개행은 제거한다.
+        let trimmedLines = text
             .components(separatedBy: "\n")
             .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
             .joined(separator: "\n")
+        return trimmedLines
+            .replacingOccurrences(of: "\n{3,}", with: "\n\n", options: [.regularExpression])
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private static func decodeEntities(_ value: String) -> String {
