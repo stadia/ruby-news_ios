@@ -45,6 +45,21 @@ struct FeedLink: Equatable {
     let url: URL
 }
 
+struct MediaAttachment: Decodable, Equatable, Hashable {
+    let url: URL
+    let mediaType: String?
+    let name: String?
+}
+
+/// 배열 디코딩 중 개별 요소 실패를 nil로 흡수해, 잘못된 한 항목이
+/// 컬렉션 전체 디코딩을 깨지 않도록 한다.
+private struct FailableDecodable<T: Decodable>: Decodable {
+    let value: T?
+    init(from decoder: Decoder) throws {
+        value = try? T(from: decoder)
+    }
+}
+
 struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
     let id: Int
     let slug: String?
@@ -62,9 +77,14 @@ struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
     let articleSlug: String?
     let parentSlug: String?
     let boostedBy: String?
+    let mediaAttachments: [MediaAttachment]
 
     var isInteractive: Bool {
         slug?.isEmpty == false
+    }
+
+    var imageAttachments: [MediaAttachment] {
+        mediaAttachments.filter { $0.mediaType?.hasPrefix("image/") == true }
     }
 
     /// 서버는 `body`를 `<p>...</p>` 형태의 HTML로 내려준다. SwiftUI `List`(UICollectionView)
@@ -126,12 +146,15 @@ struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
             options: [.regularExpression]
         )
         text = decodeEntities(text)
-        // 빈 줄을 정리하고 줄 단위로 트림한다.
-        return text
+        // 줄 단위 공백은 트림하되, 작성자가 의도한 문단 사이 빈 줄은 보존한다.
+        // 연속된 빈 줄은 최대 한 줄(\n\n)로 합치고 양끝 공백/개행은 제거한다.
+        let trimmedLines = text
             .components(separatedBy: "\n")
             .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
             .joined(separator: "\n")
+        return trimmedLines
+            .replacingOccurrences(of: "\n{3,}", with: "\n\n", options: [.regularExpression])
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private static func decodeEntities(_ value: String) -> String {
@@ -169,6 +192,7 @@ struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
         case articleSlug
         case parentSlug
         case boostedBy
+        case mediaAttachments
     }
 
     init(from decoder: Decoder) throws {
@@ -187,6 +211,11 @@ struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
         articleSlug = try container.decodeIfPresent(String.self, forKey: .articleSlug)
         parentSlug = try container.decodeIfPresent(String.self, forKey: .parentSlug)
         boostedBy = try container.decodeIfPresent(String.self, forKey: .boostedBy)
+        let rawAttachments = try container.decodeIfPresent(
+            [FailableDecodable<MediaAttachment>].self,
+            forKey: .mediaAttachments
+        ) ?? []
+        mediaAttachments = rawAttachments.compactMap(\.value)
 
         let createdAtValue = try container.decode(String.self, forKey: .createdAt)
         let updatedAtValue = try container.decode(String.self, forKey: .updatedAt)

@@ -146,6 +146,32 @@ struct FeedPostTests {
     }
 
     @Test
+    func displayBodyPreservesBlankLineBetweenParagraphs() throws {
+        let post = try makePost(body: "<p>A</p><p><br></p><p>B</p>")
+
+        #expect(post.displayBody == "A\n\nB")
+    }
+
+    @Test
+    func displayBodyCollapsesExcessiveBlankLines() throws {
+        let post = try makePost(body: "<p>A</p><p><br></p><p><br></p><p>B</p>")
+
+        #expect(post.displayBody == "A\n\nB")
+    }
+
+    @Test
+    func displayBodyPreservesParagraphSpacingForMultiParagraphPost() throws {
+        let post = try makePost(
+            body: "<p>안녕하십니까?</p><p><br></p><p>오늘 하루도 잘 지내셨습니까?</p>"
+                + "<p><br></p><p>저는 장문 쓰기 기능을 만들고 있네요.</p><p><br></p><p>추가 하는 글 완료</p>"
+        )
+
+        #expect(
+            post.displayBody == "안녕하십니까?\n\n오늘 하루도 잘 지내셨습니까?\n\n저는 장문 쓰기 기능을 만들고 있네요.\n\n추가 하는 글 완료"
+        )
+    }
+
+    @Test
     func linksExtractAnchorHrefAndTextInOrder() throws {
         let post = try makePost(
             body: "<p><a href=\"https://a.com\">A</a> 그리고 <a href='https://b.com'>B</a></p>"
@@ -235,6 +261,79 @@ struct FeedPostTests {
         let linkURLs = attributed.runs.compactMap(\.link)
 
         #expect(linkURLs == [URL(string: "https://a.com"), URL(string: "https://b.com")])
+    }
+
+    @Test
+    func decodesMediaAttachments() throws {
+        let json = """
+        {
+          "id": 1, "slug": "p", "body": "이미지 포스트",
+          "post_type": "short", "status": "published",
+          "created_at": "2026-06-13T00:30:00Z", "updated_at": "2026-06-13T00:31:00Z",
+          "likes_count": 0, "boosts_count": 0, "liked": false, "boosted": false,
+          "media_attachments": [
+            { "url": "https://example.com/a.jpg", "mediaType": "image/jpeg", "name": "alt" }
+          ]
+        }
+        """
+
+        let post = try APIClient.decoder.decode(FeedPost.self, from: Data(json.utf8))
+
+        #expect(post.mediaAttachments == [
+            MediaAttachment(
+                url: try #require(URL(string: "https://example.com/a.jpg")),
+                mediaType: "image/jpeg",
+                name: "alt"
+            )
+        ])
+    }
+
+    @Test
+    func mediaAttachmentsDefaultsToEmptyWhenAbsent() throws {
+        let post = try makePost(body: "첨부 없음")
+
+        #expect(post.mediaAttachments.isEmpty)
+    }
+
+    @Test
+    func imageAttachmentsFilterOutNonImages() throws {
+        let json = """
+        {
+          "id": 1, "slug": "p", "body": "혼합 첨부",
+          "post_type": "short", "status": "published",
+          "created_at": "2026-06-13T00:30:00Z", "updated_at": "2026-06-13T00:31:00Z",
+          "likes_count": 0, "boosts_count": 0, "liked": false, "boosted": false,
+          "media_attachments": [
+            { "url": "https://example.com/a.jpg", "mediaType": "image/jpeg", "name": null },
+            { "url": "https://example.com/doc.pdf", "mediaType": "application/pdf", "name": null }
+          ]
+        }
+        """
+
+        let post = try APIClient.decoder.decode(FeedPost.self, from: Data(json.utf8))
+
+        #expect(post.mediaAttachments.count == 2)
+        #expect(post.imageAttachments.map(\.url) == [URL(string: "https://example.com/a.jpg")])
+    }
+
+    @Test
+    func mediaAttachmentsSkipInvalidEntriesLossily() throws {
+        let json = """
+        {
+          "id": 1, "slug": "p", "body": "잘못된 첨부",
+          "post_type": "short", "status": "published",
+          "created_at": "2026-06-13T00:30:00Z", "updated_at": "2026-06-13T00:31:00Z",
+          "likes_count": 0, "boosts_count": 0, "liked": false, "boosted": false,
+          "media_attachments": [
+            { "mediaType": "image/jpeg", "name": "url 없음" },
+            { "url": "https://example.com/ok.jpg", "mediaType": "image/png", "name": null }
+          ]
+        }
+        """
+
+        let post = try APIClient.decoder.decode(FeedPost.self, from: Data(json.utf8))
+
+        #expect(post.mediaAttachments.map(\.url) == [URL(string: "https://example.com/ok.jpg")])
     }
 
     private func makePost(body: String) throws -> FeedPost {

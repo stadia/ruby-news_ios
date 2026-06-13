@@ -1,3 +1,4 @@
+import SDWebImageSwiftUI
 import SwiftUI
 
 struct FeedPostRow: View {
@@ -5,6 +6,7 @@ struct FeedPostRow: View {
     var onSelected: () -> Void
     var onLikeTapped: () -> Void
     var onBoostTapped: () -> Void
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -47,6 +49,28 @@ struct FeedPostRow: View {
             }
             .contentShape(Rectangle())
             .onTapGesture(perform: onSelected)
+
+            if !post.imageAttachments.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(post.imageAttachments, id: \.url) { attachment in
+                            WebImage(url: attachment.url) { image in
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                            } placeholder: {
+                                Color.gray.opacity(0.2)
+                            }
+                            .frame(width: 200, height: 160)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .contentShape(RoundedRectangle(cornerRadius: 10))
+                            .onTapGesture { openURL(attachment.url) }
+                            .accessibilityAddTraits(.isButton)
+                            .accessibilityLabel(attachment.name ?? "이미지")
+                        }
+                    }
+                }
+            }
 
             HStack(spacing: 20) {
                 Button(action: onLikeTapped) {
