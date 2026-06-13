@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import Testing
 @testable import ruby_news
 
@@ -199,6 +200,41 @@ struct FeedPostTests {
         let post = try makePost(body: "<p>보세요 <a href=\"https://x.com\">여기</a> 클릭</p>")
 
         #expect(post.displayBody == "보세요 여기 클릭")
+    }
+
+    @Test
+    func attributedBodyMarksAnchorTextAsLink() throws {
+        let post = try makePost(
+            body: "<p>보세요 <a href=\"https://example.com\">여기</a> 클릭</p>"
+        )
+
+        let attributed = FeedPostRow.attributedBody(for: post)
+        let linkRun = try #require(attributed.runs.first { $0.link != nil })
+
+        #expect(linkRun.link == URL(string: "https://example.com"))
+        #expect(String(attributed[linkRun.range].characters) == "여기")
+    }
+
+    @Test
+    func attributedBodyWithoutLinksHasNoLinkRun() throws {
+        let post = try makePost(body: "<p>그냥 평문입니다.</p>")
+
+        let attributed = FeedPostRow.attributedBody(for: post)
+
+        #expect(attributed.runs.allSatisfy { $0.link == nil })
+        #expect(String(attributed.characters) == "그냥 평문입니다.")
+    }
+
+    @Test
+    func attributedBodyMapsMultipleLinksInOrder() throws {
+        let post = try makePost(
+            body: "<p><a href=\"https://a.com\">first</a> / <a href=\"https://b.com\">second</a></p>"
+        )
+
+        let attributed = FeedPostRow.attributedBody(for: post)
+        let linkURLs = attributed.runs.compactMap(\.link)
+
+        #expect(linkURLs == [URL(string: "https://a.com"), URL(string: "https://b.com")])
     }
 
     private func makePost(body: String) throws -> FeedPost {
