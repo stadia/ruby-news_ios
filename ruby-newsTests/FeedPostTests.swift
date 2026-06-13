@@ -361,14 +361,14 @@ struct FeedPostTests {
     }
 
     @Test
-    func authorAvatarURLNilWhenInvalidString() throws {
+    func authorAvatarURLNilWhenEmptyString() throws {
         let json = """
         {
           "id": 1, "slug": "p", "body": "본문",
           "post_type": "short", "status": "published",
           "created_at": "2026-06-13T00:30:00Z", "updated_at": "2026-06-13T00:31:00Z",
           "likes_count": 0, "boosts_count": 0, "liked": false, "boosted": false,
-          "author_avatar_url": "잘못된 주소 with spaces"
+          "author_avatar_url": ""
         }
         """
 

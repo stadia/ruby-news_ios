@@ -194,7 +194,10 @@ struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
         case parentSlug
         case boostedBy
         case mediaAttachments
-        case authorAvatarURL
+        // `.convertFromSnakeCase`는 `author_avatar_url`을 `authorAvatarUrl`(소문자 rl)로
+        // 변환하므로, 대문자 `URL` 케이스명과 매칭되도록 raw value를 명시한다.
+        // (raw value가 없으면 항상 nil로 디코딩되는 함정)
+        case authorAvatarURL = "authorAvatarUrl"
     }
 
     init(from decoder: Decoder) throws {
