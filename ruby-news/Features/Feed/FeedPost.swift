@@ -88,7 +88,8 @@ struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
         return matches.compactMap { match in
             let rawHref = ns.substring(with: match.range(at: 1))
             let rawText = ns.substring(with: match.range(at: 2))
-            // href는 HTML 블록이 아니므로 엔티티 디코딩만 한다. (plainText의 블록/트림 파이프라인 부적절)
+            // href는 HTML 블록이 아니므로 엔티티 디코딩만 한다.
+            // (plainText의 블록/트림 파이프라인은 URL에 부적절)
             let href = decodeEntities(rawHref)
             // 앵커 내부 텍스트는 중첩 태그가 있을 수 있으므로 평문화한다.
             let text = plainText(fromHTML: rawText)
@@ -97,7 +98,8 @@ struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
         }
     }
 
-    /// `links`는 셀 렌더마다 호출되므로 정규식을 매번 재컴파일하지 않도록 한 번만 컴파일한다.
+    /// `links`는 셀 렌더마다 호출되므로 정규식을 매번
+    /// 재컴파일하지 않도록 한 번만 컴파일한다.
     private static let anchorRegex: NSRegularExpression? = {
         let pattern = "<a\\b[^>]*?href\\s*=\\s*[\"']([^\"']*)[\"'][^>]*>(.*?)</a>"
         return try? NSRegularExpression(
