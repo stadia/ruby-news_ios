@@ -9,6 +9,7 @@ struct FeedView: View {
     @Environment(SessionStore.self) private var sessionStore
     @State private var viewModel = FeedViewModel()
     @State private var sheetRoute: FeedSheetRoute?
+    @State private var safariLink: SafariLink?
 
     var body: some View {
         Group {
@@ -107,6 +108,17 @@ struct FeedView: View {
             .refreshable {
                 await viewModel.load()
             }
+            .environment(\.openURL, OpenURLAction { url in
+                guard url.scheme == "http" || url.scheme == "https" else {
+                    return .systemAction
+                }
+                safariLink = SafariLink(url: url)
+                return .handled
+            })
+            .sheet(item: $safariLink) { link in
+                SafariView(url: link.url)
+                    .ignoresSafeArea()
+            }
         }
     }
 }
@@ -132,6 +144,11 @@ private enum FeedSheetRoute: Identifiable {
             .post(id: slug)
         }
     }
+}
+
+private struct SafariLink: Identifiable {
+    let url: URL
+    var id: String { url.absoluteString }
 }
 
 #Preview {
