@@ -6,7 +6,8 @@ struct FeedPostRow: View {
     var onSelected: () -> Void
     var onLikeTapped: () -> Void
     var onBoostTapped: () -> Void
-    @Environment(\.openURL) private var openURL
+    @State private var galleryPresented = false
+    @State private var galleryIndex = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -57,7 +58,7 @@ struct FeedPostRow: View {
             if !post.imageAttachments.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        ForEach(post.imageAttachments, id: \.url) { attachment in
+                        ForEach(Array(post.imageAttachments.enumerated()), id: \.element.url) { index, attachment in
                             WebImage(url: attachment.url) { image in
                                 image
                                     .resizable()
@@ -68,11 +69,17 @@ struct FeedPostRow: View {
                             .frame(width: 200, height: 160)
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                             .contentShape(RoundedRectangle(cornerRadius: 10))
-                            .onTapGesture { openURL(attachment.url) }
+                            .onTapGesture {
+                                galleryIndex = index
+                                galleryPresented = true
+                            }
                             .accessibilityAddTraits(.isButton)
                             .accessibilityLabel(attachment.name ?? "이미지")
                         }
                     }
+                }
+                .fullScreenCover(isPresented: $galleryPresented) {
+                    MediaGalleryView(attachments: post.imageAttachments, startIndex: galleryIndex)
                 }
             }
 
