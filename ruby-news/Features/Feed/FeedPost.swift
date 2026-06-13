@@ -82,24 +82,29 @@ struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
     }
 
     static func anchorLinks(fromHTML html: String) -> [FeedLink] {
-        let pattern = "<a\\b[^>]*?href\\s*=\\s*[\"']([^\"']*)[\"'][^>]*>(.*?)</a>"
-        guard let regex = try? NSRegularExpression(
-            pattern: pattern,
-            options: [.caseInsensitive, .dotMatchesLineSeparators]
-        ) else {
-            return []
-        }
+        guard let regex = Self.anchorRegex else { return [] }
         let ns = html as NSString
         let matches = regex.matches(in: html, range: NSRange(location: 0, length: ns.length))
         return matches.compactMap { match in
             let rawHref = ns.substring(with: match.range(at: 1))
             let rawText = ns.substring(with: match.range(at: 2))
-            let href = plainText(fromHTML: rawHref)
+            // href는 HTML 블록이 아니므로 엔티티 디코딩만 한다. (plainText의 블록/트림 파이프라인 부적절)
+            let href = decodeEntities(rawHref)
+            // 앵커 내부 텍스트는 중첩 태그가 있을 수 있으므로 평문화한다.
             let text = plainText(fromHTML: rawText)
             guard !text.isEmpty, let url = URL(string: href) else { return nil }
             return FeedLink(text: text, url: url)
         }
     }
+
+    /// `links`는 셀 렌더마다 호출되므로 정규식을 매번 재컴파일하지 않도록 한 번만 컴파일한다.
+    private static let anchorRegex: NSRegularExpression? = {
+        let pattern = "<a\\b[^>]*?href\\s*=\\s*[\"']([^\"']*)[\"'][^>]*>(.*?)</a>"
+        return try? NSRegularExpression(
+            pattern: pattern,
+            options: [.caseInsensitive, .dotMatchesLineSeparators]
+        )
+    }()
 
     static func plainText(fromHTML html: String) -> String {
         var text = html

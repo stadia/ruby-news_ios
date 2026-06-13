@@ -173,6 +173,28 @@ struct FeedPostTests {
     }
 
     @Test
+    func linksHandleAttributesAfterHref() throws {
+        let post = try makePost(
+            body: "<p><a href=\"https://x.com\" target=\"_blank\" rel=\"noopener\">열기</a></p>"
+        )
+
+        #expect(post.links == [
+            FeedLink(text: "열기", url: try #require(URL(string: "https://x.com")))
+        ])
+    }
+
+    @Test
+    func linksStripNestedTagsInAnchorText() throws {
+        let post = try makePost(
+            body: "<p><a href=\"https://x.com\"><strong>굵게</strong></a></p>"
+        )
+
+        #expect(post.links == [
+            FeedLink(text: "굵게", url: try #require(URL(string: "https://x.com")))
+        ])
+    }
+
+    @Test
     func displayBodyStillKeepsAnchorInnerText() throws {
         let post = try makePost(body: "<p>보세요 <a href=\"https://x.com\">여기</a> 클릭</p>")
 
