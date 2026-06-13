@@ -17,22 +17,26 @@ struct FeedPostRow: View {
                         .foregroundStyle(.secondary)
                 }
 
-                HStack(alignment: .firstTextBaseline) {
-                    Text(post.authorName ?? "익명")
-                        .font(.subheadline.weight(.semibold))
+                HStack(alignment: .center, spacing: 10) {
+                    avatarView
 
-                    if let authorHost = post.authorHost {
-                        Text(authorHost)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(post.authorName ?? "익명")
+                            .font(.subheadline.weight(.semibold))
 
-                    Spacer()
+                        if let authorHost = post.authorHost {
+                            Text(authorHost)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
 
-                    if let createdAt = post.createdAt {
-                        Text(createdAt, style: .relative)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        Spacer()
+
+                        if let createdAt = post.createdAt {
+                            Text(createdAt, style: .relative)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
 
@@ -136,6 +140,22 @@ struct FeedPostRow: View {
         case .short:
             return "arrowshape.turn.up.left"
         }
+    }
+
+    private var avatarView: some View {
+        WebImage(url: post.authorAvatarURL) { image in
+            image
+                .resizable()
+                .scaledToFill()
+        } placeholder: {
+            Image(systemName: "person.crop.circle.fill")
+                .resizable()
+                .scaledToFit()
+                .foregroundStyle(.secondary)
+        }
+        .frame(width: 44, height: 44)
+        .clipShape(Circle())
+        .accessibilityHidden(true)
     }
 
     static func attributedBody(for post: FeedPost) -> AttributedString {

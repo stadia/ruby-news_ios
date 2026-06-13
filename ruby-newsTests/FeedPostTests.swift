@@ -336,6 +336,48 @@ struct FeedPostTests {
         #expect(post.mediaAttachments.map(\.url) == [URL(string: "https://example.com/ok.jpg")])
     }
 
+    @Test
+    func decodesAuthorAvatarURL() throws {
+        let json = """
+        {
+          "id": 1, "slug": "p", "body": "본문",
+          "post_type": "short", "status": "published",
+          "created_at": "2026-06-13T00:30:00Z", "updated_at": "2026-06-13T00:31:00Z",
+          "likes_count": 0, "boosts_count": 0, "liked": false, "boosted": false,
+          "author_avatar_url": "https://example.com/avatar.jpg"
+        }
+        """
+
+        let post = try APIClient.decoder.decode(FeedPost.self, from: Data(json.utf8))
+
+        #expect(post.authorAvatarURL == URL(string: "https://example.com/avatar.jpg"))
+    }
+
+    @Test
+    func authorAvatarURLNilWhenAbsent() throws {
+        let post = try makePost(body: "아바타 없음")
+
+        #expect(post.authorAvatarURL == nil)
+    }
+
+    @Test
+    func authorAvatarURLNilWhenInvalidString() throws {
+        let json = """
+        {
+          "id": 1, "slug": "p", "body": "본문",
+          "post_type": "short", "status": "published",
+          "created_at": "2026-06-13T00:30:00Z", "updated_at": "2026-06-13T00:31:00Z",
+          "likes_count": 0, "boosts_count": 0, "liked": false, "boosted": false,
+          "author_avatar_url": "잘못된 주소 with spaces"
+        }
+        """
+
+        let post = try APIClient.decoder.decode(FeedPost.self, from: Data(json.utf8))
+
+        #expect(post.id == 1)
+        #expect(post.authorAvatarURL == nil)
+    }
+
     private func makePost(body: String) throws -> FeedPost {
         let json = """
         {

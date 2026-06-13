@@ -78,6 +78,7 @@ struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
     let parentSlug: String?
     let boostedBy: String?
     let mediaAttachments: [MediaAttachment]
+    let authorAvatarURL: URL?
 
     var isInteractive: Bool {
         slug?.isEmpty == false
@@ -193,6 +194,7 @@ struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
         case parentSlug
         case boostedBy
         case mediaAttachments
+        case authorAvatarURL
     }
 
     init(from decoder: Decoder) throws {
@@ -211,6 +213,12 @@ struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
         articleSlug = try container.decodeIfPresent(String.self, forKey: .articleSlug)
         parentSlug = try container.decodeIfPresent(String.self, forKey: .parentSlug)
         boostedBy = try container.decodeIfPresent(String.self, forKey: .boostedBy)
+        // 잘못된 URL 문자열이 포스트 전체 디코딩을 깨지 않도록 String으로 받아 변환한다.
+        if let avatarString = try container.decodeIfPresent(String.self, forKey: .authorAvatarURL) {
+            authorAvatarURL = URL(string: avatarString)
+        } else {
+            authorAvatarURL = nil
+        }
         let rawAttachments = try container.decodeIfPresent(
             [FailableDecodable<MediaAttachment>].self,
             forKey: .mediaAttachments
