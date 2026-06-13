@@ -40,6 +40,11 @@ struct FeedPagination: Decodable, Equatable {
     }
 }
 
+struct FeedLink: Equatable {
+    let text: String
+    let url: URL
+}
+
 struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
     let id: Int
     let slug: String?
@@ -68,6 +73,32 @@ struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
     /// 런루프를 돌리지 않는 순수 문자열 처리로 태그를 제거한 평문을 제공한다.
     var displayBody: String {
         Self.plainText(fromHTML: body)
+    }
+
+    /// 본문 HTML의 `<a href="...">텍스트</a>` 앵커를 문서 순서대로 추출한다.
+    /// `text`는 `displayBody`에 나타나는 평문과 동일하게 정리된다.
+    var links: [FeedLink] {
+        Self.anchorLinks(fromHTML: body)
+    }
+
+    static func anchorLinks(fromHTML html: String) -> [FeedLink] {
+        let pattern = "<a\\b[^>]*?href\\s*=\\s*[\"']([^\"']*)[\"'][^>]*>(.*?)</a>"
+        guard let regex = try? NSRegularExpression(
+            pattern: pattern,
+            options: [.caseInsensitive, .dotMatchesLineSeparators]
+        ) else {
+            return []
+        }
+        let ns = html as NSString
+        let matches = regex.matches(in: html, range: NSRange(location: 0, length: ns.length))
+        return matches.compactMap { match in
+            let rawHref = ns.substring(with: match.range(at: 1))
+            let rawText = ns.substring(with: match.range(at: 2))
+            let href = plainText(fromHTML: rawHref)
+            let text = plainText(fromHTML: rawText)
+            guard !text.isEmpty, let url = URL(string: href) else { return nil }
+            return FeedLink(text: text, url: url)
+        }
     }
 
     static func plainText(fromHTML html: String) -> String {

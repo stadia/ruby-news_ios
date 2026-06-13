@@ -144,6 +144,41 @@ struct FeedPostTests {
         #expect(post.displayBody == "그냥 평문입니다.")
     }
 
+    @Test
+    func linksExtractAnchorHrefAndTextInOrder() throws {
+        let post = try makePost(
+            body: "<p><a href=\"https://a.com\">A</a> 그리고 <a href='https://b.com'>B</a></p>"
+        )
+
+        #expect(post.links == [
+            FeedLink(text: "A", url: try #require(URL(string: "https://a.com"))),
+            FeedLink(text: "B", url: try #require(URL(string: "https://b.com")))
+        ])
+    }
+
+    @Test
+    func linksIgnoreEmptyHrefAndMissingHref() throws {
+        let post = try makePost(body: "<p><a href=\"\">x</a> <a>y</a> 평문</p>")
+
+        #expect(post.links.isEmpty)
+    }
+
+    @Test
+    func linksDecodeEntitiesInAnchorText() throws {
+        let post = try makePost(body: "<p><a href=\"https://x.com\">a &amp; b</a></p>")
+
+        #expect(post.links == [
+            FeedLink(text: "a & b", url: try #require(URL(string: "https://x.com")))
+        ])
+    }
+
+    @Test
+    func displayBodyStillKeepsAnchorInnerText() throws {
+        let post = try makePost(body: "<p>보세요 <a href=\"https://x.com\">여기</a> 클릭</p>")
+
+        #expect(post.displayBody == "보세요 여기 클릭")
+    }
+
     private func makePost(body: String) throws -> FeedPost {
         let json = """
         {
