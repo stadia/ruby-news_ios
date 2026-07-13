@@ -32,23 +32,21 @@ struct FeedView: View {
 
     private var nativeFeed: some View {
         NavigationStack {
-            content
-                .navigationTitle("피드")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
-                        Button {
-                            sheetRoute = .composer
-                        } label: {
-                            Label("포스트 작성", systemImage: "square.and.pencil")
-                        }
-                    }
-                }
+            VStack(spacing: 0) {
+                FeedComposerView(onSubmitted: refreshFeed)
+                content
+            }
+            .navigationTitle("피드")
+            .navigationBarTitleDisplayMode(.inline)
         }
         .task {
             guard viewModel.posts.isEmpty else { return }
             await viewModel.load()
         }
+    }
+
+    private func refreshFeed() {
+        Task { await viewModel.load() }
     }
 
     @ViewBuilder
@@ -108,13 +106,16 @@ struct FeedView: View {
             .refreshable {
                 await viewModel.load()
             }
-            .environment(\.openURL, OpenURLAction { url in
-                guard url.scheme == "http" || url.scheme == "https" else {
-                    return .systemAction
+            .environment(
+                \.openURL,
+                OpenURLAction { url in
+                    guard url.scheme == "http" || url.scheme == "https" else {
+                        return .systemAction
+                    }
+                    safariLink = SafariLink(url: url)
+                    return .handled
                 }
-                safariLink = SafariLink(url: url)
-                return .handled
-            })
+            )
             .sheet(item: $safariLink) { link in
                 SafariView(url: link.url)
                     .ignoresSafeArea()
@@ -124,13 +125,10 @@ struct FeedView: View {
 }
 
 private enum FeedSheetRoute: Identifiable {
-    case composer
     case post(String)
 
     var id: String {
         switch self {
-        case .composer:
-            "composer"
         case .post(let slug):
             "post-\(slug)"
         }
@@ -138,8 +136,6 @@ private enum FeedSheetRoute: Identifiable {
 
     var webRoute: WebRoute {
         switch self {
-        case .composer:
-            .feed
         case .post(let slug):
             .post(id: slug)
         }

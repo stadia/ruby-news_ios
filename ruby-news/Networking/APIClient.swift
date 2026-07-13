@@ -21,14 +21,18 @@ struct APIClient {
     private let refreshCoordinator = AuthRefreshCoordinator()
 
     /// `tokenStore`에서 token을 읽고 refresh 시 저장하도록 wiring된 인증 API client.
-    static func authenticated(tokenStore: TokenStore, baseURL: URL = AppEnvironment.baseURL, session: URLSession = .shared) -> APIClient {
+    static func authenticated(
+        tokenStore: TokenStore, baseURL: URL = AppEnvironment.baseURL, session: URLSession = .shared
+    ) -> APIClient {
         var client = APIClient(baseURL: baseURL, session: session)
         client.tokenProvider = { try? tokenStore.load() }
         client.onTokenRefreshed = { try? tokenStore.save($0) }
         return client
     }
 
-    func articles(cursor: String? = nil, searchQuery: String? = nil) async throws -> ArticlesResponse {
+    func articles(cursor: String? = nil, searchQuery: String? = nil) async throws
+        -> ArticlesResponse
+    {
         var queryItems: [URLQueryItem] = []
         if let searchQuery, !searchQuery.isEmpty {
             queryItems.append(URLQueryItem(name: "search", value: searchQuery))
@@ -39,7 +43,8 @@ struct APIClient {
 
         return try await withAuthRetry {
             let accessToken = tokenProvider?()?.accessToken
-            let request = APIRequest(path: "/api/v1/articles", queryItems: queryItems).urlRequest(relativeTo: baseURL, accessToken: accessToken)
+            let request = APIRequest(path: "/api/v1/articles", queryItems: queryItems).urlRequest(
+                relativeTo: baseURL, accessToken: accessToken)
             let (data, response) = try await session.data(for: request)
             try validate(response)
             return try Self.decoder.decode(ArticlesResponse.self, from: data)
@@ -53,7 +58,8 @@ struct APIClient {
             if let cursor {
                 queryItems.append(URLQueryItem(name: "page", value: cursor))
             }
-            let request = APIRequest(path: "/api/v1/articles/others", queryItems: queryItems).urlRequest(relativeTo: baseURL, accessToken: accessToken)
+            let request = APIRequest(path: "/api/v1/articles/others", queryItems: queryItems)
+                .urlRequest(relativeTo: baseURL, accessToken: accessToken)
             let (data, response) = try await session.data(for: request)
             try validate(response)
             return try Self.decoder.decode(ArticlesResponse.self, from: data)
@@ -63,7 +69,8 @@ struct APIClient {
     func tag(keyword: String, cursor: String? = nil) async throws -> ArticlesResponse {
         return try await withAuthRetry {
             let accessToken = tokenProvider?()?.accessToken
-            let request = APIRequest.tag(keyword: keyword, cursor: cursor).urlRequest(relativeTo: baseURL, accessToken: accessToken)
+            let request = APIRequest.tag(keyword: keyword, cursor: cursor).urlRequest(
+                relativeTo: baseURL, accessToken: accessToken)
             let (data, response) = try await session.data(for: request)
             try validate(response)
             return try Self.decoder.decode(ArticlesResponse.self, from: data)
@@ -82,6 +89,20 @@ struct APIClient {
         }
     }
 
+    func createPost(content: String) async throws -> FeedPost {
+        try await withAuthRetry {
+            let accessToken = tokenProvider?()?.accessToken
+            var request = APIRequest(path: "/post").urlRequest(
+                relativeTo: baseURL, accessToken: accessToken)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = try JSONEncoder().encode(["content": content])
+            let (data, response) = try await session.data(for: request)
+            try validate(response)
+            return try Self.decoder.decode(FeedPost.self, from: data)
+        }
+    }
+
     struct AccountResult {
         let user: CurrentUser
         let auth: AuthSession?
@@ -90,7 +111,8 @@ struct APIClient {
     func me() async throws -> AccountResult {
         return try await withAuthRetry {
             let accessToken = tokenProvider?()?.accessToken
-            let request = APIRequest(path: "/account/edit").urlRequest(relativeTo: baseURL, accessToken: accessToken)
+            let request = APIRequest(path: "/account/edit").urlRequest(
+                relativeTo: baseURL, accessToken: accessToken)
             let (data, response) = try await session.data(for: request)
             try validate(response)
             let accountResponse = try Self.decoder.decode(AccountResponse.self, from: data)
@@ -116,7 +138,8 @@ struct APIClient {
         try await withAuthRetry {
             guard let accessToken = tokenProvider?()?.accessToken else { return }
 
-            var request = APIRequest(path: "/logout").urlRequest(relativeTo: baseURL, accessToken: accessToken)
+            var request = APIRequest(path: "/logout").urlRequest(
+                relativeTo: baseURL, accessToken: accessToken)
             request.httpMethod = "GET"
 
             let (_, response) = try await session.data(for: request)
@@ -174,18 +197,22 @@ struct APIClient {
         let httpResponse = try validateLogin(response)
         let loginBody = try Self.decoder.decode(LoginResponse.self, from: data)
 
-        guard let authSession = AuthSession(
-            authorizationHeader: httpResponse.value(forHTTPHeaderField: "Authorization"),
-            refreshToken: loginBody.refreshToken,
-            expiresIn: loginBody.expiresIn ?? 900
-        ) else {
+        guard
+            let authSession = AuthSession(
+                authorizationHeader: httpResponse.value(forHTTPHeaderField: "Authorization"),
+                refreshToken: loginBody.refreshToken,
+                expiresIn: loginBody.expiresIn ?? 900
+            )
+        else {
             throw APIError.missingAccessToken
         }
 
         return LoginResult(user: loginBody.user, auth: authSession)
     }
 
-    private func sendLikeRequest(target: InteractionTarget, method: String) async throws -> LikeResponse {
+    private func sendLikeRequest(target: InteractionTarget, method: String) async throws
+        -> LikeResponse
+    {
         try await withAuthRetry {
             let accessToken = tokenProvider?()?.accessToken
             var request = APIRequest(path: "\(target.path)/like")
@@ -200,7 +227,9 @@ struct APIClient {
         }
     }
 
-    private func sendBoostRequest(target: InteractionTarget, method: String) async throws -> BoostResponse {
+    private func sendBoostRequest(target: InteractionTarget, method: String) async throws
+        -> BoostResponse
+    {
         try await withAuthRetry {
             let accessToken = tokenProvider?()?.accessToken
             var request = APIRequest(path: "\(target.path)/boost")
@@ -245,7 +274,8 @@ struct APIClient {
 
     private func attemptRefresh() async throws -> AuthSession {
         guard let session = tokenProvider?(),
-              let refreshToken = session.refreshToken else {
+            let refreshToken = session.refreshToken
+        else {
             throw APIError.unauthorized
         }
         let newSession = try await refreshCoordinator.refresh {
@@ -282,7 +312,8 @@ struct APIClient {
 private actor AuthRefreshCoordinator {
     private var task: Task<AuthSession, Error>?
 
-    func refresh(_ operation: @escaping () async throws -> AuthSession) async throws -> AuthSession {
+    func refresh(_ operation: @escaping () async throws -> AuthSession) async throws -> AuthSession
+    {
         if let task {
             return try await task.value
         }
