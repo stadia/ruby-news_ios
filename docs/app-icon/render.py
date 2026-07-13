@@ -20,8 +20,8 @@ W = 1024
 CENTER = (W / 2, W / 2)
 WHITE = (255, 255, 255, 255)
 
-NOTO_BLACK = "~/Library/Fonts/NotoSansCJKkr-Black.otf"
-NOTO_BOLD = "~/Library/Fonts/NotoSansCJKkr-Bold.otf"
+NOTO_BLACK = os.path.expanduser("~/Library/Fonts/NotoSansCJKkr-Black.otf")
+NOTO_BOLD = os.path.expanduser("~/Library/Fonts/NotoSansCJKkr-Bold.otf")
 UNIFRAKTUR = os.path.join(os.path.dirname(__file__), "UnifrakturCook-Bold.ttf")
 OUT = os.path.dirname(__file__)
 
