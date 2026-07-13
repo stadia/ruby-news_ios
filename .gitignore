@@ -58,6 +58,9 @@ fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
 
+### Local signing
+Config/Signing.xcconfig
+
 ### AI Agent
 .claude/
 .pi/

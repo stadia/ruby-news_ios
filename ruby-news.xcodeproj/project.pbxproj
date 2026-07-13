@@ -31,6 +31,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		E46971C02F00000100776988 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
+		E46971C12F00000100776988 /* Signing.xcconfig.example */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig.example; sourceTree = "<group>"; };
 		E469716A2FAB7EE200776988 /* ruby-news.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ruby-news.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E46971792FAB7EE300776988 /* ruby-newsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "ruby-newsTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E46971832FAB7EE300776988 /* ruby-newsUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "ruby-newsUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -83,9 +85,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		E46971C22F00000100776988 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				E46971C02F00000100776988 /* Signing.xcconfig */,
+				E46971C12F00000100776988 /* Signing.xcconfig.example */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
 		E46971612FAB7EE200776988 = {
 			isa = PBXGroup;
 			children = (
+				E46971C22F00000100776988 /* Config */,
 				E469716C2FAB7EE200776988 /* ruby-news */,
 				E469717C2FAB7EE300776988 /* ruby-newsTests */,
 				E46971862FAB7EE300776988 /* ruby-newsUITests */,
@@ -293,6 +305,7 @@
 /* Begin XCBuildConfiguration section */
 		E469718B2FAB7EE300776988 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = E46971C02F00000100776988 /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -326,7 +339,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = "$(APPLE_DEVELOPMENT_TEAM)";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -358,6 +371,7 @@
 		};
 		E469718C2FAB7EE300776988 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = E46971C02F00000100776988 /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -391,7 +405,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = "$(APPLE_DEVELOPMENT_TEAM)";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -416,12 +430,13 @@
 		};
 		E469718E2FAB7EE300776988 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = E46971C02F00000100776988 /* Signing.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = "$(APPLE_DEVELOPMENT_TEAM)";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -448,12 +463,13 @@
 		};
 		E469718F2FAB7EE300776988 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = E46971C02F00000100776988 /* Signing.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = "$(APPLE_DEVELOPMENT_TEAM)";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -480,11 +496,12 @@
 		};
 		E46971912FAB7EE300776988 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = E46971C02F00000100776988 /* Signing.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = "$(APPLE_DEVELOPMENT_TEAM)";
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
 				MARKETING_VERSION = 1.0;
@@ -502,11 +519,12 @@
 		};
 		E46971922FAB7EE300776988 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = E46971C02F00000100776988 /* Signing.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = "$(APPLE_DEVELOPMENT_TEAM)";
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
 				MARKETING_VERSION = 1.0;
@@ -524,10 +542,11 @@
 		};
 		E46971942FAB7EE300776988 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = E46971C02F00000100776988 /* Signing.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = "$(APPLE_DEVELOPMENT_TEAM)";
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "kr.stadia.ruby-newsUITests";
@@ -544,10 +563,11 @@
 		};
 		E46971952FAB7EE300776988 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = E46971C02F00000100776988 /* Signing.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = "$(APPLE_DEVELOPMENT_TEAM)";
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "kr.stadia.ruby-newsUITests";
