@@ -34,7 +34,7 @@ nonisolated final class KeychainTokenStore: TokenStore, Sendable {
     }
 }
 
-private struct KeychainSession: Codable {
+nonisolated private struct KeychainSession: Codable {
     let accessToken: String
     let refreshToken: String?
     let expiresAt: Date

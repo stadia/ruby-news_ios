@@ -6,7 +6,7 @@
 import Foundation
 @preconcurrency import KeychainAccess
 
-struct PersistedWebSessionCookie: Codable, Equatable {
+nonisolated struct PersistedWebSessionCookie: Codable, Equatable, Sendable {
     let name: String
     let value: String
     let domain: String
