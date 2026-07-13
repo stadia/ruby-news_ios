@@ -6,7 +6,7 @@
 ._*
 
 # Custom folder icons
-Icon
+Icon
 
 # Volume root files
 .DocumentRevisions-V100
@@ -17,12 +17,13 @@ Icon
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
 
-### Swift
+### Swift / Xcode
 # Xcode user settings
 xcuserdata/
 
 # Xcode build data
 DerivedData/
+.build/
 
 # Swift/Obj-C specific
 *.hmap
@@ -37,7 +38,26 @@ timeline.xctimeline
 playground.xcworkspace
 
 # Swift Package Manager
+# Packages/
+# Package.pins
 # Package.resolved
+# *.xcodeproj
+# .swiftpm
+
+# CocoaPods
+# Pods/
+# *.xcworkspace
+
+# Carthage
+# Carthage/Checkouts
+Carthage/Build/
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
 ### AI Agent
 .claude/
 .pi/
