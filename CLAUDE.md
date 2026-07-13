@@ -1,0 +1,68 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project
+
+iOS app (SwiftUI + Hotwire Native) for **ruby-news.dev**, a Korean Ruby/Rails news hub. The Rails server is a separate repo at `~/projects/al_news` — do not modify server code unless explicitly asked. The app consumes existing server endpoints (no `/api/v1` namespace except for the JWT refresh endpoint); native JSON requests must send `Accept: application/json` against the same routes the web UI uses.
+
+Always read `AGENTS.md` first — it defines mandatory behavioral rules (TDD, surgical edits, package-first, current product direction). The notes below assume that.
+
+## Commands
+
+Build / test (use the `ruby-news` scheme; iOS Simulator destination):
+
+```sh
+# Build
+xcodebuild -project ruby-news.xcodeproj -scheme ruby-news \
+  -destination 'platform=iOS Simulator,name=iPhone 17' build
+
+# Run all unit + UI tests
+xcodebuild -project ruby-news.xcodeproj -scheme ruby-news \
+  -destination 'platform=iOS Simulator,name=iPhone 17' test
+
+# Run a single test class or method
+xcodebuild ... test -only-testing:ruby-newsTests/APIClientTests
+xcodebuild ... test -only-testing:ruby-newsTests/APIClientTests/test_articles_decodes_response
+```
+
+SwiftLint runs as a build plugin; config in `.swiftlint.yml` (scope is `ruby-news/` only — tests are excluded). Notable opt-ins: `force_unwrapping`, `sorted_imports`, `empty_count`. Line length warns at 120 / errors at 160.
+
+## Environment switching
+
+`AppEnvironment.baseURL` (`ruby-news/App/AppEnvironment.swift`) returns `http://localhost:3000` only when **DEBUG && simulator**; physical devices and Release always hit `https://ruby-news.dev`. Tests that build URLs should not assume localhost.
+
+## Architecture
+
+Three-layer split, navigable from `ruby_newsApp.swift` → `ContentView` → tabs in `App/AppTab.swift`:
+
+1. **Native SwiftUI** (`Features/News`, `Features/Feed`, `Features/Profile`) — used for the high-frequency news list. `NewsViewModel` owns loading / search / pagination / like-toggling and is the canonical place for behavioral tests.
+2. **Hotwire Native** (`Hotwire/`) — wraps complex Rails/Turbo flows: article detail, comments, login, signup, account settings, profiles, followers/following, actor lookup, tags. `WebRoute` is the single source of truth for path construction; never hand-build these URLs. `SheetSafeHotwireNavigationController` exists to prevent stray dismissals of presented sheets — be careful when changing dismiss logic (see recent commit history).
+3. **Networking + Auth** (`Networking/`, `Auth/`) — `APIClient` is a value type with injectable `session` / `tokenProvider` / `onTokenRefreshed`. All authed calls go through `withAuthRetry`, which on `401` calls `POST /api/v1/auth/refresh` once and retries. Refreshed tokens are persisted by `SessionStore` via `TokenStore` (Keychain in prod, in-memory in tests).
+
+### Auth model (web + native share state)
+
+- Login is JSON `POST /login` returning `{ user, refresh_token, expires_in }` plus an `Authorization: Bearer …` header. `AuthSession` is built from the header + body.
+- `SessionStore` (`@MainActor @Observable`) is the single source of truth for `currentUser` / `authSession`. It also drives `WebSessionBridge`, which mirrors the cookie jar into the Hotwire `WKWebView` so web flows stay logged in.
+- External sign-out (server invalidates session) posts `SessionStore.didExternalSignOutNotification`.
+- For tests, construct `SessionStore` with the closure-based `init` and an `InMemoryTokenStore` — the convenience `init` reaches into Keychain.
+
+### Test fakes
+
+- `URLSession.mockerSession()` + `Mock(...).register()` (Mocker package) is the **default** for new tests with fixed responses.
+- `URLSession.mockSession(handler:)` in `MockURLSession.swift` is for tests that need dynamic / sequenced responses; each call gets a per-session ID so tests don't bleed into each other.
+- Don't introduce a third mocking style.
+
+## Required reading before non-trivial work
+
+Per `AGENTS.md` §5:
+- `docs/NEXT_SESSION.md`
+- `docs/plans/2026-05-06-ruby-news-ios-app-design.md`
+- `docs/server-requests/2026-05-06-ios-json-contract-requests.md`
+- `docs/plans/2026-05-08-ios-jwt-auth-plan.md` and `docs/server-requests/2026-05-08-ios-jwt-auth-contract.md` for anything touching auth.
+
+If an architectural decision changes, update these docs in the same change.
+
+## Packages in use
+
+`HotwireNative`, `SDWebImageSwiftUI`, `KeychainAccess`, `SwiftLint` (build plugin), `Mocker` (test-only). Per AGENTS.md §7: check for an existing package before hand-rolling (Keychain → KeychainAccess, image loading → SDWebImageSwiftUI). The networking layer is intentionally hand-rolled — don't replace it with Alamofire/etc.
