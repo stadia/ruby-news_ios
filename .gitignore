@@ -18,6 +18,9 @@ Icon
 .com.apple.timemachine.donotpresent
 
 ### Swift / Xcode
+# XcodeGen — .xcodeproj is generated from project.yml
+ruby-news.xcodeproj/
+
 # Xcode user settings
 xcuserdata/
 
