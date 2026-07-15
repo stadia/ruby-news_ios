@@ -70,6 +70,9 @@ Current product direction:
 - Prefer Native SwiftUI for high-frequency list UX, especially the news list.
 - Use Hotwire Native for complex existing Rails/Turbo flows: article detail, comments, feed, login, signup, account settings, profiles, followers/following, actor lookup/follow.
 
+Project structure:
+- Project structure, target, and package changes go through `project.yml` plus `xcodegen generate` — not the `.xcodeproj` directly.
+
 Server boundary:
 - The Rails server lives outside this repo at `~/projects/al_news`.
 - Do not modify server code from this iOS project unless the user explicitly asks.
