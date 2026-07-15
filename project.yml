@@ -9,6 +9,13 @@ configFiles:
   Debug: Config/Signing.xcconfig
   Release: Config/Signing.xcconfig
 
+settings:
+  base:
+    DEVELOPMENT_TEAM: "$(APPLE_DEVELOPMENT_TEAM)"
+  configs:
+    Release:
+      VALIDATE_PRODUCT: YES
+
 packages:
   HotwireNative:
     url: https://github.com/hotwired/hotwire-native-ios
