@@ -9,7 +9,7 @@ import HotwireNative
 import SwiftUI
 
 @main
-struct ruby_newsApp: App {
+struct RubyNewsApp: App {
     init() {
         Hotwire.config.defaultNavigationController = { SheetSafeHotwireNavigationController() }
         WebSessionBridge().restorePersistedCookiesToSharedStorage()
