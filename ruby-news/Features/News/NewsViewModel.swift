@@ -212,6 +212,8 @@ final class NewsViewModel {
     }
 }
 
+// private 헬퍼는 SwiftLint type_body_length(warn 200) 상한을 유지하기 위해
+// extension으로 분리합니다. 본문으로 옮기면 lint 경고가 재발하니 주의.
 extension NewsViewModel {
     private func loadFirstPage() async {
         let requestID = UUID()

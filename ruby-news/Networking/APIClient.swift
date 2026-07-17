@@ -225,6 +225,8 @@ struct APIClient {
     }
 }
 
+// like/boost 엔드포인트는 SwiftLint type_body_length(error 350) 상한을 유지하기 위해
+// extension으로 분리합니다. 본문으로 옮기면 lint 에러가 재발하니 주의.
 extension APIClient {
     func like(articleSlug: String) async throws -> LikeResponse {
         try await sendLikeRequest(target: .article(articleSlug), method: "POST")
