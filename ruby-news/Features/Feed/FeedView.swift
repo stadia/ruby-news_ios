@@ -10,6 +10,7 @@ struct FeedView: View {
     @State private var viewModel = FeedViewModel()
     @State private var sheetRoute: FeedSheetRoute?
     @State private var safariLink: SafariLink?
+    @State private var isComposePresented = false
 
     var body: some View {
         Group {
@@ -32,12 +33,21 @@ struct FeedView: View {
 
     private var nativeFeed: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                FeedComposerView(onSubmitted: refreshFeed)
-                content
-            }
-            .navigationTitle("피드")
-            .navigationBarTitleDisplayMode(.inline)
+            content
+                .navigationTitle("피드")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            isComposePresented = true
+                        } label: {
+                            Label("새 글", systemImage: "square.and.pencil")
+                        }
+                    }
+                }
+        }
+        .sheet(isPresented: $isComposePresented) {
+            FeedComposerView(onSubmitted: refreshFeed)
         }
         .task {
             guard viewModel.posts.isEmpty else { return }
