@@ -210,7 +210,9 @@ final class NewsViewModel {
             }
         }
     }
+}
 
+extension NewsViewModel {
     private func loadFirstPage() async {
         let requestID = UUID()
         latestFirstPageRequestID = requestID

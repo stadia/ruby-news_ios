@@ -42,7 +42,9 @@ struct NewsArticleRow: View {
                     .foregroundStyle(article.liked ? .red : .secondary)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(article.liked ? "좋아요 취소, 현재 \(article.likersCount)개" : "좋아요, 현재 \(article.likersCount)개")
+                .accessibilityLabel(article.liked
+                    ? "좋아요 취소, 현재 \(article.likersCount)개"
+                    : "좋아요, 현재 \(article.likersCount)개")
 
                 Button {
                     onBoostTapped?()

@@ -21,11 +21,16 @@ struct APIRequest {
     }
 
     func urlRequest(relativeTo baseURL: URL = AppEnvironment.baseURL, accessToken: String? = nil) -> URLRequest {
-        var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)!
+        guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
+            preconditionFailure("Invalid base URL: \(baseURL)")
+        }
         components.percentEncodedPath = path
         components.queryItems = queryItems.isEmpty ? nil : queryItems
 
-        var request = URLRequest(url: components.url!)
+        guard let url = components.url else {
+            preconditionFailure("Invalid URL components for path: \(path)")
+        }
+        var request = URLRequest(url: url)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         if let accessToken {
             request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")

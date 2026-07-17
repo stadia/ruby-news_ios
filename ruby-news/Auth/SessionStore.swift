@@ -68,13 +68,17 @@ final class SessionStore: NSObject {
         )
     }
 
-    convenience init(fetchCurrentUser: @escaping () async throws -> CurrentUser,
-         loginAction: @escaping (String, String) async throws -> APIClient.LoginResult = { _, _ in throw APIError.unauthorized },
-         logoutAction: @escaping () async throws -> Void = {},
-         syncWebSession: @escaping () async -> Void = {},
-         clearWebSession: @escaping () async -> Void = {},
-         notifyWebSessionChange: @escaping () -> Void = {},
-         tokenStore: TokenStore? = nil) {
+    convenience init(
+        fetchCurrentUser: @escaping () async throws -> CurrentUser,
+        loginAction: @escaping (String, String) async throws -> APIClient.LoginResult = { _, _ in
+            throw APIError.unauthorized
+        },
+        logoutAction: @escaping () async throws -> Void = {},
+        syncWebSession: @escaping () async -> Void = {},
+        clearWebSession: @escaping () async -> Void = {},
+        notifyWebSessionChange: @escaping () -> Void = {},
+        tokenStore: TokenStore? = nil
+    ) {
         self.init(
             fetchAccount: {
                 let user = try await fetchCurrentUser()

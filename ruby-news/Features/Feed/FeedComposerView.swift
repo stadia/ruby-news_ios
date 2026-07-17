@@ -47,8 +47,7 @@ struct FeedComposerView: View {
                             let wasEmpty = viewModel.content.isEmpty
                             await viewModel.submit()
                             if !wasEmpty && viewModel.content.isEmpty
-                                && viewModel.errorMessage == nil
-                            {
+                                && viewModel.errorMessage == nil {
                                 onSubmitted()
                             }
                         }

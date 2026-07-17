@@ -37,8 +37,7 @@ struct NewsView: View {
         } else {
             NavigationStack {
                 TabView(selection: $sourcePageIndex) {
-                    ForEach(Array(NewsSource.allCases.enumerated()), id: \.element) {
-                        index, source in
+                    ForEach(Array(NewsSource.allCases.enumerated()), id: \.element) { index, source in
                         NewsSourcePage(source: source, onArticleSelected: onArticleSelected)
                             .tag(index)
                     }

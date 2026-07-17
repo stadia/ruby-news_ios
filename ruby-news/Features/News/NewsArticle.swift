@@ -68,7 +68,12 @@ struct NewsArticle: Decodable, Identifiable, Equatable, Hashable {
     let tags: [String]
 
     var id: String { slug }
-    var displayTitle: String { titleKo?.isEmpty == false ? titleKo! : title }
+    var displayTitle: String {
+        if let titleKo, !titleKo.isEmpty {
+            return titleKo
+        }
+        return title
+    }
     var summary: String? { summaryKey.first }
 
     enum CodingKeys: String, CodingKey {
