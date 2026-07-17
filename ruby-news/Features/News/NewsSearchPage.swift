@@ -14,8 +14,7 @@ struct NewsSearchPage: View {
     @State private var viewModel = NewsViewModel()
     @State private var isSearchPresented: Bool
 
-    init(title: String, presentsSearchOnAppear: Bool, onArticleSelected: @escaping (String) -> Void)
-    {
+    init(title: String, presentsSearchOnAppear: Bool, onArticleSelected: @escaping (String) -> Void) {
         self.title = title
         self.onArticleSelected = onArticleSelected
         _isSearchPresented = State(initialValue: presentsSearchOnAppear)

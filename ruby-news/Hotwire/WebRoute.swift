@@ -23,9 +23,14 @@ enum WebRoute: Equatable {
     case tag(keyword: String)
 
     func url(relativeTo baseURL: URL = AppEnvironment.baseURL) -> URL {
-        var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)!
+        guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
+            preconditionFailure("Invalid base URL: \(baseURL)")
+        }
         components.percentEncodedPath = path
-        return components.url!
+        guard let url = components.url else {
+            preconditionFailure("Invalid URL components for path: \(path)")
+        }
+        return url
     }
 
     private var path: String {

@@ -11,9 +11,9 @@ extension Color {
     static let rnBrand = Color(UIColor { trait in
         let hex: UInt32 = trait.userInterfaceStyle == .dark ? 0x16A571 : 0x0E8A5C
         return UIColor(
-            red:   CGFloat((hex >> 16) & 0xFF) / 255.0,
-            green: CGFloat((hex >> 8)  & 0xFF) / 255.0,
-            blue:  CGFloat( hex        & 0xFF) / 255.0,
+            red: CGFloat((hex >> 16) & 0xFF) / 255.0,
+            green: CGFloat((hex >> 8) & 0xFF) / 255.0,
+            blue: CGFloat(hex & 0xFF) / 255.0,
             alpha: 1.0
         )
     })

@@ -13,7 +13,10 @@ struct CurrentUser: Decodable, Identifiable, Equatable {
     let avatarURL: URL?
 
     var profileURL: URL {
-        URL(string: "/@\(username)", relativeTo: AppEnvironment.baseURL)!
+        guard let url = URL(string: "/@\(username)", relativeTo: AppEnvironment.baseURL) else {
+            preconditionFailure("Invalid profile URL for username: \(username)")
+        }
+        return url
     }
 
     enum CodingKeys: String, CodingKey {

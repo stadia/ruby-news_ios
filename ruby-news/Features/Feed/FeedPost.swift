@@ -98,11 +98,11 @@ struct FeedPost: Decodable, Identifiable, Equatable, Hashable {
     /// `text`는 `displayBody`에 나타나는 평문과 동일하게 정리된다.
     static func anchorLinks(fromHTML html: String) -> [FeedLink] {
         guard let regex = Self.anchorRegex else { return [] }
-        let ns = html as NSString
-        let matches = regex.matches(in: html, range: NSRange(location: 0, length: ns.length))
+        let nsString = html as NSString
+        let matches = regex.matches(in: html, range: NSRange(location: 0, length: nsString.length))
         return matches.compactMap { match in
-            let rawHref = ns.substring(with: match.range(at: 1))
-            let rawText = ns.substring(with: match.range(at: 2))
+            let rawHref = nsString.substring(with: match.range(at: 1))
+            let rawText = nsString.substring(with: match.range(at: 2))
             // href는 HTML 블록이 아니므로 엔티티 디코딩만 한다.
             // (plainText의 블록/트림 파이프라인은 URL에 부적절)
             let href = decodeEntities(rawHref)
