@@ -21,25 +21,29 @@ struct NewsSearchPage: View {
     }
 
     var body: some View {
-        mainContent
-            .searchable(
-                text: $viewModel.searchQuery,
-                isPresented: $isSearchPresented,
-                placement: .toolbar,
-                prompt: "뉴스 검색"
-            )
-            .searchToolbarBehavior(.minimize)
-            .onSubmit(of: .search) {
-                Task { await viewModel.search() }
-            }
-            .onChange(of: viewModel.searchQuery) { oldValue, newValue in
-                guard !oldValue.isEmpty, newValue.isEmpty else { return }
-                Task { await viewModel.search() }
-            }
-            .onAppear {
-                isSearchPresented = true
-                Task { await viewModel.load() }
-            }
+        NavigationStack {
+            mainContent
+                .navigationTitle(title)
+                .navigationBarTitleDisplayMode(.inline)
+                .searchable(
+                    text: $viewModel.searchQuery,
+                    isPresented: $isSearchPresented,
+                    placement: .toolbar,
+                    prompt: "뉴스 검색"
+                )
+                .searchToolbarBehavior(.minimize)
+                .onSubmit(of: .search) {
+                    Task { await viewModel.search() }
+                }
+                .onChange(of: viewModel.searchQuery) { oldValue, newValue in
+                    guard !oldValue.isEmpty, newValue.isEmpty else { return }
+                    Task { await viewModel.search() }
+                }
+                .onAppear {
+                    isSearchPresented = true
+                    Task { await viewModel.load() }
+                }
+        }
     }
 
     @ViewBuilder
