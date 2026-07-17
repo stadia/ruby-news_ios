@@ -1,5 +1,5 @@
 //
-//  ruby_newsApp.swift
+//  RubyNewsApp.swift
 //  ruby-news
 //
 //  Created by JEFF.DEAN on 5/6/26.

@@ -54,7 +54,7 @@ SwiftLint runs as a build plugin; config in `.swiftlint.yml` (scope is `ruby-new
 
 ## Architecture
 
-Three-layer split, navigable from `ruby_newsApp.swift` → `ContentView` → tabs in `App/AppTab.swift`:
+Three-layer split, navigable from `RubyNewsApp.swift` → `ContentView` → tabs in `App/AppTab.swift`:
 
 1. **Native SwiftUI** (`Features/News`, `Features/Feed`, `Features/Profile`) — used for the high-frequency news list. `NewsViewModel` owns loading / search / pagination / like-toggling and is the canonical place for behavioral tests.
 2. **Hotwire Native** (`Hotwire/`) — wraps complex Rails/Turbo flows: article detail, comments, login, signup, account settings, profiles, followers/following, actor lookup, tags. `WebRoute` is the single source of truth for path construction; never hand-build these URLs. `SheetSafeHotwireNavigationController` exists to prevent stray dismissals of presented sheets — be careful when changing dismiss logic (see recent commit history).
