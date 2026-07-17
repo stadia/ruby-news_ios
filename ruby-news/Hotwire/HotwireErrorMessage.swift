@@ -15,40 +15,42 @@ struct HotwireErrorMessage {
     init(_ error: HotwireNativeError) {
         switch error {
         case .web(let webError):
-            if webError.isOffline {
-                title = "인터넷 연결 끊김"
-                description = "네트워크 연결을 확인한 뒤 다시 시도해 주세요."
-            } else if webError.isTimeout {
-                title = "시간 초과"
-                description = "요청 시간이 초과되었습니다. 다시 시도해 주세요."
-            } else if webError.isConnectionError {
-                title = "서버에 연결할 수 없음"
-                description = "서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요."
-            } else {
-                title = "네트워크 오류"
-                description = "네트워크 오류가 발생했습니다. 다시 시도해 주세요."
-            }
+            (title, description) = Self.webMessage(for: webError)
         case .http(let httpError):
-            switch httpError {
-            case .client(let clientError):
-                switch clientError {
-                case .notFound:
-                    title = "페이지를 찾을 수 없음"
-                    description = "요청하신 페이지를 찾을 수 없습니다."
-                case .unauthorized, .forbidden:
-                    title = "접근 권한 없음"
-                    description = "이 페이지에 접근할 권한이 없습니다. 로그인 상태를 확인해 주세요."
-                default:
-                    title = "요청 오류"
-                    description = "요청을 처리할 수 없습니다. 잠시 후 다시 시도해 주세요."
-                }
-            case .server:
-                title = "서버 오류"
-                description = "서버에 일시적인 문제가 있습니다. 잠시 후 다시 시도해 주세요."
-            }
+            (title, description) = Self.httpMessage(for: httpError)
         case .load:
-            title = "페이지를 불러올 수 없음"
-            description = "페이지를 불러오는 중 문제가 발생했습니다. 다시 시도해 주세요."
+            (title, description) = (
+                "페이지를 불러올 수 없음",
+                "페이지를 불러오는 중 문제가 발생했습니다. 다시 시도해 주세요."
+            )
+        }
+    }
+
+    private static func webMessage(for error: WebError) -> (title: String, description: String) {
+        if error.isOffline {
+            return ("인터넷 연결 끊김", "네트워크 연결을 확인한 뒤 다시 시도해 주세요.")
+        } else if error.isTimeout {
+            return ("시간 초과", "요청 시간이 초과되었습니다. 다시 시도해 주세요.")
+        } else if error.isConnectionError {
+            return ("서버에 연결할 수 없음", "서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.")
+        } else {
+            return ("네트워크 오류", "네트워크 오류가 발생했습니다. 다시 시도해 주세요.")
+        }
+    }
+
+    private static func httpMessage(for error: HTTPError) -> (title: String, description: String) {
+        switch error {
+        case .client(let clientError):
+            switch clientError {
+            case .notFound:
+                return ("페이지를 찾을 수 없음", "요청하신 페이지를 찾을 수 없습니다.")
+            case .unauthorized, .forbidden:
+                return ("접근 권한 없음", "이 페이지에 접근할 권한이 없습니다. 로그인 상태를 확인해 주세요.")
+            default:
+                return ("요청 오류", "요청을 처리할 수 없습니다. 잠시 후 다시 시도해 주세요.")
+            }
+        case .server:
+            return ("서버 오류", "서버에 일시적인 문제가 있습니다. 잠시 후 다시 시도해 주세요.")
         }
     }
 }

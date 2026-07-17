@@ -32,10 +32,10 @@ struct RubyNewsErrorView: ErrorPresentableView {
     RubyNewsErrorView(error: .web(WebError(urlError: URLError(.notConnectedToInternet))), handler: {})
 }
 
-#Preview("페이지를 찾을 수 없음") {
-    RubyNewsErrorView(error: .http(HTTPError(statusCode: 404)!), handler: {})
+#Preview("서버 오류") {
+    RubyNewsErrorView(error: .http(HTTPError(statusCode: 500) ?? .server(.internalServerError)), handler: {})
 }
 
-#Preview("서버 오류") {
-    RubyNewsErrorView(error: .http(HTTPError(statusCode: 500)!), handler: nil)
+#Preview("페이지를 찾을 수 없음") {
+    RubyNewsErrorView(error: .http(HTTPError(statusCode: 404) ?? .client(.notFound)), handler: nil)
 }
