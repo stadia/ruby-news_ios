@@ -12,6 +12,9 @@ import SwiftUI
 struct RubyNewsApp: App {
     init() {
         Hotwire.config.defaultNavigationController = { SheetSafeHotwireNavigationController() }
+        Hotwire.config.makeCustomErrorView = { error, handler in
+            RubyNewsErrorView(error: error, handler: handler)
+        }
         WebSessionBridge().restorePersistedCookiesToSharedStorage()
     }
 
