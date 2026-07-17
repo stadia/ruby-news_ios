@@ -8,26 +8,6 @@
 import HotwireNative
 import SwiftUI
 import UIKit
-import WebKit
-
-enum HotwireNavigationErrorPolicy {
-    /// WKWebView returns `frameLoadInterruptedByPolicyChange` (code 102)
-    /// under the legacy `WebKitErrorDomain`, not `WKErrorDomain`.
-    private static let frameLoadInterruptedByPolicyChangeCode = 102
-    private static let ignoredDomains: Set<String> = [
-        WKError.errorDomain,
-        "WebKitErrorDomain",
-    ]
-
-    static func shouldPresent(_ error: Error) -> Bool {
-        let error = error as NSError
-        if ignoredDomains.contains(error.domain),
-           error.code == frameLoadInterruptedByPolicyChangeCode {
-            return false
-        }
-        return true
-    }
-}
 
 struct HotwireScreen: UIViewControllerRepresentable {
     let route: WebRoute
@@ -139,14 +119,13 @@ extension HotwireScreen {
 
         func visitableDidFailRequest(
             _ visitable: Visitable,
-            error: Error,
+            error: HotwireNativeError,
             retryHandler: RetryBlock?
         ) {
-            guard HotwireNavigationErrorPolicy.shouldPresent(error),
-                  let errorPresenter = visitable as? ErrorPresenter else {
-                return
-            }
-
+            // HotwireNative 1.3+ delivers a structured `HotwireNativeError` (HTTP / web / load)
+            // rather than a raw `Error`, so the benign WKError.Code.frameLoadInterruptedByPolicyChange
+            // (102) that the old `Error`-based callback surfaced no longer reaches this path.
+            guard let errorPresenter = visitable as? ErrorPresenter else { return }
             errorPresenter.presentError(error, retryHandler: retryHandler)
         }
     }
