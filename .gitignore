@@ -18,8 +18,18 @@ Icon
 .com.apple.timemachine.donotpresent
 
 ### Swift / Xcode
-# XcodeGen — .xcodeproj is generated from project.yml
-ruby-news.xcodeproj/
+# XcodeGen — .xcodeproj is generated from project.yml and not tracked,
+# but the SwiftPM lock file (Package.resolved) IS tracked so dependency
+# versions stay pinned across machines. Drill down: ignore each level's
+# contents (not the dirs themselves) so the nested lock file can be re-included.
+ruby-news.xcodeproj/*
+!ruby-news.xcodeproj/project.xcworkspace/
+ruby-news.xcodeproj/project.xcworkspace/*
+!ruby-news.xcodeproj/project.xcworkspace/xcshareddata/
+ruby-news.xcodeproj/project.xcworkspace/xcshareddata/*
+!ruby-news.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+ruby-news.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/*
+!ruby-news.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 
 # Xcode user settings
 xcuserdata/

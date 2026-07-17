@@ -14,12 +14,13 @@
 - Bundle ID: 앱 `kr.stadia.ruby-news`, 유닛테스트 `kr.stadia.ruby-newsTests`, UI테스트 `kr.stadia.ruby-newsUITests`
 - `IPHONEOS_DEPLOYMENT_TARGET = 26.4`, `SWIFT_VERSION = 5.0`, `TARGETED_DEVICE_FAMILY = "1,2"`
 - `MARKETING_VERSION = 1.0`, `CURRENT_PROJECT_VERSION = 1`
-- 패키지 요구사항(모두 `upToNextMajorVersion` = XcodeGen `majorVersion`):
-  - HotwireNative `https://github.com/hotwired/hotwire-native-ios` ≥ 1.2.2 (product `HotwireNative`)
-  - SDWebImageSwiftUI `https://github.com/SDWebImage/SDWebImageSwiftUI` ≥ 3.0.0
-  - KeychainAccess `https://github.com/kishikawakatsumi/KeychainAccess` ≥ 4.0.0
-  - SwiftLint `https://github.com/realm/SwiftLint` ≥ 0.57.0 (build tool plugin)
-  - Mocker `https://github.com/WeTransfer/Mocker` ≥ 3.0.0 (테스트 타깃 전용)
+- 패키지 요구사항(모두 `upToNextMajorVersion` = XcodeGen `majorVersion`).
+  전환과 함께 같은 메이저 내 최신으로 floor를 올림(아래는 업그레이드 후 최소 버전):
+  - HotwireNative `https://github.com/hotwired/hotwire-native-ios` ≥ 1.3.0 (product `HotwireNative`)
+  - SDWebImageSwiftUI `https://github.com/SDWebImage/SDWebImageSwiftUI` ≥ 3.1.4
+  - KeychainAccess `https://github.com/kishikawakatsumi/KeychainAccess` ≥ 4.2.2
+  - SwiftLint `https://github.com/realm/SwiftLint` ≥ 0.65.0 (build tool plugin)
+  - Mocker `https://github.com/WeTransfer/Mocker` ≥ 3.0.2 (테스트 타깃 전용)
 - 앱 타깃 패키지 의존성: HotwireNative, SDWebImageSwiftUI, KeychainAccess + SwiftLint 플러그인
 - 테스트 타깃 패키지 의존성: Mocker
 - Base config: 모든 config가 `Config/Signing.xcconfig` 참조 (gitignore됨, 로컬 전용)
@@ -89,22 +90,34 @@ configFiles:
   Debug: Config/Signing.xcconfig
   Release: Config/Signing.xcconfig
 
+settings:
+  base:
+    DEVELOPMENT_TEAM: "$(APPLE_DEVELOPMENT_TEAM)"
+    # Defaults newer Xcode (26.x) writes into new projects but XcodeGen 2.46.0
+    # presets don't emit — reproduce them explicitly to match the pre-migration project.
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+  configs:
+    Release:
+      VALIDATE_PRODUCT: YES
+
 packages:
   HotwireNative:
     url: https://github.com/hotwired/hotwire-native-ios
-    majorVersion: 1.2.2
+    majorVersion: 1.3.0
   SDWebImageSwiftUI:
     url: https://github.com/SDWebImage/SDWebImageSwiftUI
-    majorVersion: 3.0.0
+    majorVersion: 3.1.4
   KeychainAccess:
     url: https://github.com/kishikawakatsumi/KeychainAccess
-    majorVersion: 4.0.0
+    majorVersion: 4.2.2
   SwiftLint:
     url: https://github.com/realm/SwiftLint
-    majorVersion: 0.57.0
+    majorVersion: 0.65.0
   Mocker:
     url: https://github.com/WeTransfer/Mocker
-    majorVersion: 3.0.0
+    majorVersion: 3.0.2
 
 targets:
   ruby-news:
@@ -141,8 +154,9 @@ targets:
       - package: HotwireNative
       - package: SDWebImageSwiftUI
       - package: KeychainAccess
-      - package: SwiftLint
-        plugin: SwiftLintBuildToolPlugin
+    buildToolPlugins:
+      - plugin: SwiftLintBuildToolPlugin
+        package: SwiftLint
 
   ruby-newsTests:
     type: bundle.unit-test
@@ -192,9 +206,10 @@ targets:
 참고:
 - 유닛테스트의 `TEST_HOST`/`BUNDLE_LOADER`, UI테스트의 `TEST_TARGET_NAME`은 XcodeGen이
   `dependencies: - target: ruby-news`(테스트 타깃)에서 자동 설정하므로 명시하지 않는다.
-- SwiftLint 플러그인 이름은 `SwiftLintBuildToolPlugin`. `plugin:` 키를 인식하지 못하는
-  구버전 XcodeGen이면 Step 2에서 드러나며, 그 경우 `SwiftLintPlugins`/실제 product명으로
-  교정한다(Task 3에서 generate 결과로 확정).
+- SwiftLint 플러그인 이름은 `SwiftLintBuildToolPlugin`. 빌드 툴 플러그인은
+  `dependencies:`가 아니라 별도의 `buildToolPlugins:` 블록에 지정한다(초기 설계에서는
+  `dependencies:` 아래 `plugin:` 키로 시도했으나, XcodeGen은 이를 인식하지 못해
+  `buildToolPlugins:`로 이동 — Task 3 generate 결과로 확정).
 
 - [ ] **Step 2: YAML 유효성 확인 (generate 없이 파싱)**
 
@@ -350,25 +365,27 @@ git commit -m "chore: stop tracking generated xcodeproj, ignore it"
 - Consumes: 전체 전환 결과.
 - Produces: 빌드 전 `xcodegen generate`가 필요함을 문서에 반영.
 
+> 참고: 아래 Step 1~2의 제안 문안은 한국어로 작성되어 있으나, 실제 커밋된
+> `CLAUDE.md`/`AGENTS.md` 추가분은 영어 문안으로 반영되었고 내용도 일부 정제됨.
+> 이 계획의 문안은 취지 참고용이며, 최종 기준은 커밋된 문서 기준.
+
 - [ ] **Step 1: CLAUDE.md Commands 섹션에 사전 단계 추가**
 
 `## Commands` 섹션 상단(빌드 코드블록 직전)에 다음 안내를 추가:
 
-```markdown
+~~~~markdown
 프로젝트 파일은 XcodeGen으로 생성한다. `ruby-news.xcodeproj`는 git 추적되지 않으며
 `project.yml`이 단일 소스다. 클론 직후 또는 `project.yml` 변경 후 반드시 실행:
 
-​```sh
+```sh
 # 최초 1회: XcodeGen 설치 및 로컬 서명 설정
 brew install xcodegen
 cp Config/Signing.xcconfig.example Config/Signing.xcconfig  # 팀 ID 기입
 
 # 프로젝트 생성 (project.yml 변경 시마다)
 xcodegen generate
-​```
 ```
-
-(위 코드펜스의 zero-width 문자는 실제 파일에선 일반 백틱 3개로 작성.)
+~~~~
 
 - [ ] **Step 2: AGENTS.md에 XcodeGen 규칙 한 줄 추가**
 
@@ -410,4 +427,5 @@ git commit -m "docs: document XcodeGen generate workflow"
 **Placeholder scan:** TBD/TODO 없음. 모든 코드/커맨드/기대 출력 명시.
 
 **Type consistency:** 패키지명·bundle id·플러그인명(`SwiftLintBuildToolPlugin`)·경로가 Task 전반에서 일관.
-플러그인명이 XcodeGen에서 다르게 요구될 경우 Task 3 Step 1에서 드러나며 교정 경로가 명시됨.
+플러그인 *이름*은 일관하나, *부착 구문*은 구현 중 `dependencies:` 아래 `plugin:` 키에서
+별도의 `buildToolPlugins:` 블록으로 정제되었다(위 Task 2 Step 1 참고).
